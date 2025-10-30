@@ -1,0 +1,22 @@
+package com.dat.wordgame.common;
+
+
+public enum MessageType {
+// Session & lobby
+LOGIN_REQ, LOGIN_OK, LOGIN_FAIL,
+LOBBY_SNAPSHOT, PLAYER_LIST, LEADERBOARD,
+INVITE_SEND, INVITE_RECEIVE, INVITE_ACCEPT, INVITE_REJECT,
+
+
+// Room/game lifecycle
+ROOM_CREATED, ROOM_JOINED, ROOM_STATE,
+ROUND_START, ROUND_TICK, ROUND_END, GAME_END,
+
+
+// Gameplay & chat
+GUESS_SUBMIT, GUESS_UPDATE, CHAT,
+
+
+// Errors
+ERROR
+}

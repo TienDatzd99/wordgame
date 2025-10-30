@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 WordleCup - Login Test</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #5856d6;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #5856d6;
+            box-shadow: 0 0 0 3px rgba(88, 86, 214, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #5856d6, #667eea);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(88, 86, 214, 0.3);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #ef4444;
+        }
+
+        .users-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .users-info h3 {
+            margin-top: 0;
+            color: #374151;
+            font-size: 18px;
+        }
+
+        .user-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .user-item:last-child {
+            border-bottom: none;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #5856d6;
+        }
+
+        .password {
+            font-family: monospace;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="title">🎮 WordleCup</div>
+        <div class="subtitle">Login Test Page</div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" placeholder="Nhập username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Nhập password">
+            </div>
+            
+            <button type="submit" class="login-btn">🔐 Login</button>
+        </form>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="users-info">
+            <h3>📋 Test Accounts:</h3>
+            <div class="user-item">
+                <span class="username">alice</span>
+                <span class="password">123</span>
+            </div>
+            <div class="user-item">
+                <span class="username">bob</span>
+                <span class="password">123</span>
+            </div>
+            <div class="user-item">
+                <span class="username">charlie</span>
+                <span class="password">123</span>
+            </div>
+            <div class="user-item">
+                <span class="username">dora</span>
+                <span class="password">123</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const statusDiv = document.getElementById('status');
+        
+        // Test database with authentication logic
+        const users = {
+            'alice': '123',
+            'bob': '123', 
+            'charlie': '123',
+            'dora': '123'
+        };
+        
+        function showStatus(message, isSuccess) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + (isSuccess ? 'success' : 'error');
+            statusDiv.style.display = 'block';
+        }
+        
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            // Validate input
+            if (!username || !password) {
+                showStatus('❌ Vui lòng nhập đầy đủ thông tin!', false);
+                return;
+            }
+            
+            // Simulate authentication (same logic as server)
+            if (users[username] && users[username] === password) {
+                showStatus(`✅ Đăng nhập thành công! Chào mừng ${username}!`, true);
+                
+                // Simulate navigation to lobby
+                setTimeout(() => {
+                    showStatus(`🎮 Đang chuyển vào lobby...`, true);
+                }, 1000);
+                
+            } else {
+                showStatus('❌ Sai tài khoản hoặc mật khẩu!', false);
+            }
+        });
+        
+        // Auto-fill demo
+        document.getElementById('username').value = 'alice';
+        document.getElementById('password').value = '123';
+    </script>
+</body>
+</html>

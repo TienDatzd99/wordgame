@@ -1,0 +1,74 @@
+2025-10-06T15:32:39.635Z [INFO] ----------------------invoke build_java_project----------------------
+2025-10-06T15:32:39.635Z [INFO] [Tool.invoke]({name: build_java_project, input: {
+  "projectPath": "d:\\wordgame\\wordgame",
+  "codeChangesMessage": "",
+  "codeChangesDetails": ""
+}}).
+2025-10-06T15:32:39.635Z [INFO] [Task.start](): Starting task toolCall
+2025-10-06T15:32:39.636Z [INFO] [Task.start](): Started task toolCall
+2025-10-06T15:32:39.636Z [INFO] [Tool.invoke] validate GitHub Copilot license.
+2025-10-06T15:32:59.639Z [INFO] Copilot user info:{
+  "access_type_sku": "free_educational_quota",
+  "analytics_tracking_id": "7148557659226ef43f0f0a8e0310e81f",
+  "assigned_date": "2024-11-06T23:14:06+07:00",
+  "can_signup_for_limited": false,
+  "chat_enabled": true,
+  "copilot_plan": "individual",
+  "organization_login_list": [],
+  "organization_list": [],
+  "quota_reset_date": "2025-11-01",
+  "quota_snapshots": {
+    "chat": {
+      "entitlement": 0,
+      "overage_count": 0,
+      "overage_permitted": false,
+      "percent_remaining": 100,
+      "quota_id": "chat",
+      "quota_remaining": 0,
+      "remaining": 0,
+      "unlimited": true,
+      "timestamp_utc": "2025-10-06T15:33:01.445Z"
+    },
+    "completions": {
+      "entitlement": 0,
+      "overage_count": 0,
+      "overage_permitted": false,
+      "percent_remaining": 100,
+      "quota_id": "completions",
+      "quota_remaining": 0,
+      "remaining": 0,
+      "unlimited": true,
+      "timestamp_utc": "2025-10-06T15:33:01.445Z"
+    },
+    "premium_interactions": {
+      "entitlement": 300,
+      "overage_count": 0,
+      "overage_permitted": false,
+      "percent_remaining": 93.33333333333333,
+      "quota_id": "premium_interactions",
+      "quota_remaining": 280,
+      "remaining": 280,
+      "unlimited": false,
+      "timestamp_utc": "2025-10-06T15:33:01.445Z"
+    }
+  },
+  "quota_reset_date_utc": "2025-11-01T00:00:00.000Z"
+}
+2025-10-06T15:32:59.640Z [WARN] "GitHub Copilot app modernization - upgrade for Java" and its tools are only available for GitHub Copilot "Pro", "Pro+", "Business" and "Enterprise" plans.
+2025-10-06T15:32:59.640Z [ERROR] [Tool.invoke] error occurs when invoking tool build_java_project: UserError: "GitHub Copilot app modernization - upgrade for Java" and its tools are only available for GitHub Copilot "Pro", "Pro+", "Business" and "Enterprise" plans.. Please upgrade your GitHub Copilot plan to use this feature or upgrading this project using other tools you prefer..
+2025-10-06T15:32:59.641Z [INFO] [Task.complete](): Completing task toolCall
+2025-10-06T15:32:59.641Z [INFO] ----------------------invoked build_java_project----------------------
+2025-10-06T15:32:59.642Z [INFO] [Task.complete](): Completed task toolCall
+2025-10-06T15:46:23.490Z [INFO] ----------------------invoke install_maven----------------------
+2025-10-06T15:46:23.490Z [INFO] [Tool.invoke]({name: install_maven, input: {
+  "version": "latest",
+  "projectPath": "d:\\wordgame"
+}}).
+2025-10-06T15:46:23.490Z [INFO] [Task.start](): Starting task toolCall
+2025-10-06T15:46:23.491Z [INFO] [Task.start](): Started task toolCall
+2025-10-06T15:46:23.491Z [INFO] [Tool.invoke] validate GitHub Copilot license.
+2025-10-06T15:46:23.491Z [WARN] "GitHub Copilot app modernization - upgrade for Java" and its tools are only available for GitHub Copilot "Pro", "Pro+", "Business" and "Enterprise" plans.
+2025-10-06T15:46:23.491Z [ERROR] [Tool.invoke] error occurs when invoking tool install_maven: UserError: "GitHub Copilot app modernization - upgrade for Java" and its tools are only available for GitHub Copilot "Pro", "Pro+", "Business" and "Enterprise" plans.. Please upgrade your GitHub Copilot plan to use this feature or upgrading this project using other tools you prefer..
+2025-10-06T15:46:23.491Z [INFO] [Task.complete](): Completing task toolCall
+2025-10-06T15:46:23.491Z [INFO] ----------------------invoked install_maven----------------------
+2025-10-06T15:46:23.492Z [INFO] [Task.complete](): Completed task toolCall
