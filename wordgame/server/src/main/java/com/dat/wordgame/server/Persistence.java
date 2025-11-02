@@ -42,6 +42,32 @@ return false;
 } }
 
 
+public static boolean userExists(String u){ 
+try(var c=conn(); var ps=c.prepareStatement("SELECT 1 FROM users WHERE username=?")){
+ps.setString(1,u); try(var rs=ps.executeQuery()){ return rs.next(); }
+}catch(Exception e){ return false; } 
+}
+
+
+public static boolean createUser(String u, String p){ 
+System.out.println("CREATE_USER: Attempting to create user: " + u);
+if(userExists(u)){
+System.out.println("CREATE_USER: User already exists: " + u);
+return false;
+}
+try(var c=conn(); var ps=c.prepareStatement("INSERT INTO users(username,password,points) VALUES(?,?,?)")){
+ps.setString(1,u); ps.setString(2,p); ps.setInt(3,0);
+int rows = ps.executeUpdate();
+System.out.println("CREATE_USER: User created successfully: " + u + " (rows=" + rows + ")");
+return rows > 0;
+}catch(Exception e){ 
+System.out.println("CREATE_USER: Exception during user creation: " + e.getMessage());
+e.printStackTrace();
+return false; 
+} 
+}
+
+
 public static int totalPoints(String u){ try(var c=conn(); var ps=c.prepareStatement("SELECT points FROM users WHERE username=?")){
 ps.setString(1,u); try(var rs=ps.executeQuery()){ return rs.next()?rs.getInt(1):0; }
 }catch(Exception e){ return 0; } }

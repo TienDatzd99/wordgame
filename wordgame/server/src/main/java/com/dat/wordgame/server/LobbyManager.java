@@ -47,22 +47,40 @@ public class LobbyManager {
     public void route(String from, Message m) {
         switch (m.type) {
             case INVITE_SEND -> {
-                String to = (String) ((Map<?, ?>) m.payload).get("to");
-                var dst = online.get(to);
-                if (dst != null) dst.send(Message.of(MessageType.INVITE_RECEIVE, Map.of("from", from)));
+                Models.InviteSend invite = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.InviteSend.class);
+                var dst = online.get(invite.to());
+                if (dst != null) {
+                    Models.InviteReceive inviteReceive = new Models.InviteReceive(invite.from());
+                    dst.send(Message.of(MessageType.INVITE_RECEIVE, inviteReceive));
+                    System.out.println("INVITE_SEND: " + invite.from() + " -> " + invite.to());
+                }
             }
             case INVITE_ACCEPT -> {
-                String host = (String) ((Map<?, ?>) m.payload).get("host");
-                GameRoom room = new GameRoom(host, from, this);
+                Models.InviteAccept accept = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.InviteAccept.class);
+                String host = accept.from(); // The person who sent the original invite
+                String opponent = accept.to(); // The person who accepted (current user)
+                GameRoom room = new GameRoom(host, opponent, this);
                 rooms.put(room.id(), room);
                 room.notifyJoin();
                 broadcastLobby();
+                System.out.println("INVITE_ACCEPT: Room created - " + host + " vs " + opponent);
             }
-            case INVITE_REJECT -> { /* optional feedback */ }
+            case INVITE_REJECT -> { 
+                System.out.println("INVITE_REJECT received");
+                /* optional feedback */ 
+            }
             case GUESS_SUBMIT -> {
                 Models.GuessSubmit gs = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.GuessSubmit.class);
                 GameRoom r = rooms.get(gs.roomId()); 
                 if (r != null) r.onGuess(from, gs.guess());
+            }
+            case SURRENDER -> {
+                Models.Surrender surrender = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.Surrender.class);
+                GameRoom r = rooms.get(surrender.roomId());
+                if (r != null) {
+                    r.onSurrender(surrender.player());
+                    System.out.println("SURRENDER: " + surrender.player() + " surrendered in room " + surrender.roomId());
+                }
             }
             default -> {}
         }

@@ -1,9 +1,0 @@
-@echo off
-echo Starting Word Game Server...
-start "Word Game Server" java -jar "D:\wordgame\wordgame\server\target\server-1.0.0-jar-with-dependencies.jar"
-
-echo Waiting for server to start...
-timeout /t 2 /nobreak >nul
-
-echo Starting Word Game Client...
-java -jar "D:\wordgame\wordgame\client\target\client-1.0.0-jar-with-dependencies.jar"
