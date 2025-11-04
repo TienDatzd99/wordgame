@@ -540,8 +540,9 @@ public class SwingLoginView extends JFrame {
                         pendingLobbySnapshot = message; // Save for later
                     }
                 }
-                case INVITE_RECEIVE, ROOM_CREATED, ROOM_JOINED, ROUND_START, ROUND_TICK, ROUND_END, GAME_END, GUESS_UPDATE, CHAT -> {
-                    // Forward all game-related messages to LobbyView
+                case INVITE_RECEIVE, ROOM_CREATED, ROOM_JOINED, ROUND_START, ROUND_TICK, ROUND_END, GAME_END, GUESS_UPDATE, CHAT,
+                     FRIEND_REQUEST_RECEIVE, FRIEND_LIST_RESP, FRIEND_INVITE_RESP -> {
+                    // Forward all game-related and friend system messages to LobbyView
                     System.out.println("SwingLoginView: Received " + message.type);
                     if (lobbyView != null) {
                         System.out.println("SwingLoginView: Forwarding " + message.type + " to LobbyView");

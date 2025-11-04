@@ -21,6 +21,17 @@ public record InviteReceive(String from) {}
 public record InviteAccept(String from, String to) {}
 public record InviteReject(String from, String to) {}
 
+// Friend System
+public record FriendRequest(String from, String to) {}
+public record FriendRequestReceive(String from) {}
+public record FriendRequestAccept(String from, String to) {}
+public record FriendRequestReject(String from, String to) {}
+public record FriendInfo(String username, boolean isOnline, int totalPoints) {}
+public record FriendListReq(String username) {}
+public record FriendListResp(List<FriendInfo> friends) {}
+public record FriendInviteSend(String from, String to) {}
+public record FriendInviteResp(boolean success, String message) {}
+
 // Room/game
 public record RoomState(String roomId, String host, String opponent, int round, String status) {}
 public record RoundStart(String roomId, int round, String maskedWord, List<Character> shuffledLetters, int totalTimeSec) {}

@@ -7,15 +7,20 @@ import java.util.*; import java.util.concurrent.*; import java.util.stream.*;
 
 public class GameRoom {
 private final String id = UUID.randomUUID().toString();
-private final String host; private final String opponent; private final LobbyManager lobby;
+private final String host; private String opponent; private final LobbyManager lobby;
 private volatile int round = 1; private volatile String currentWord; private volatile long roundEndAt;
+private volatile long roundStartAt; // Track when round started
 private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 private Set<String> playersCorrect = new HashSet<>(); // Track who got it correct
 private String firstCorrect = null; // Who answered correctly first
 private long firstCorrectTime = 0; // Time when first correct answer
+private Map<String, Long> completionTimes = new HashMap<>(); // Track each player's completion time
+private Map<String, Integer> gameScores = new HashMap<>(); // Track total game scores for each player
 
 
 public GameRoom(String host, String opponent, LobbyManager lobby){ this.host=host; this.opponent=opponent; this.lobby=lobby; }
+public GameRoom(String host, LobbyManager lobby){ this.host=host; this.opponent=null; this.lobby=lobby; }
+public void addOpponent(String opponent) { this.opponent = opponent; }
 public String id(){ return id; } public String host(){ return host; } public String opponent(){ return opponent; }
 
 
@@ -35,8 +40,10 @@ startRound();
 private void startRound(){
 System.out.println("[GameRoom] startRound() called for round " + round);
 playersCorrect.clear(); // Reset for new round
+completionTimes.clear(); // Reset completion times
 firstCorrect = null;
 firstCorrectTime = 0;
+roundStartAt = System.currentTimeMillis(); // Track round start time
 currentWord = WordService.pickByRound(round);
 System.out.println("[GameRoom] Word picked: " + currentWord + ", length: " + currentWord.length());
 int total = Payloads.timeLimitByLength(currentWord.length());
@@ -58,8 +65,8 @@ private void tick(int total){
 int remain = (int)Math.max(0, (roundEndAt - System.currentTimeMillis())/1000L);
 lobby.sendToBoth(this, Message.of(MessageType.ROUND_TICK, new RoundTick(id, remain)));
 if(remain<=0){ 
-    // Time's up - determine winner
-    endRound(firstCorrect, total, 0); 
+    // Time's up - use new scoring system
+    endRoundWithNewScoring();
 }
 }
 
@@ -72,28 +79,88 @@ lobby.sendToBoth(this, Message.of(MessageType.GUESS_UPDATE, new GuessUpdate(id, 
 boolean isCorrect = guess.equalsIgnoreCase(currentWord);
 
 if (isCorrect && !playersCorrect.contains(from)) {
+    // Record completion time for this player
+    long completionTime = System.currentTimeMillis();
+    completionTimes.put(from, completionTime - roundStartAt); // Store time taken in ms
+    
     // First time this player got it correct
     playersCorrect.add(from);
     
     // Track who answered first
     if (firstCorrect == null) {
         firstCorrect = from;
-        firstCorrectTime = System.currentTimeMillis();
-        System.out.println("[GameRoom] " + from + " answered correctly FIRST!");
+        firstCorrectTime = completionTime;
+        System.out.println("[GameRoom] " + from + " answered correctly FIRST in " + (completionTime - roundStartAt) + "ms!");
     } else {
-        System.out.println("[GameRoom] " + from + " also answered correctly!");
+        System.out.println("[GameRoom] " + from + " also answered correctly in " + (completionTime - roundStartAt) + "ms!");
     }
     
     // End round if BOTH players got it correct
     if (playersCorrect.size() >= 2) {
-        int remain = (int)Math.max(0, (roundEndAt - System.currentTimeMillis())/1000L);
         System.out.println("[GameRoom] Both players correct! Ending round. Winner: " + firstCorrect);
-        endRound(firstCorrect, Payloads.timeLimitByLength(currentWord.length()), remain);
+        endRoundWithNewScoring();
     }
 }
 // If incorrect, just send GUESS_UPDATE (already sent above), client will show red border
 }
 
+    private void endRoundWithNewScoring() {
+        scheduler.shutdownNow(); scheduler = Executors.newSingleThreadScheduledExecutor();
+        
+        String winner = firstCorrect;
+        String correct = currentWord;
+        int totalTimeMs = Payloads.timeLimitByLength(currentWord.length()) * 1000;
+        
+        if (winner != null) {
+            // Calculate score for winner using new system
+            long completionTimeMs = completionTimes.get(winner);
+            int award = Payloads.calculateScore(true, (int)completionTimeMs, totalTimeMs, round);
+            
+            // Update game score tracking
+            gameScores.put(winner, gameScores.getOrDefault(winner, 0) + award);
+            
+            // For display purposes, calculate base and bonus
+            int base = Payloads.baseScoreByRound(round);
+            double timeRatio = Math.max(0, totalTimeMs - completionTimeMs) / (double)totalTimeMs;
+            double bonus = timeRatio * base;
+            
+            System.out.println("[GameRoom] Winner: " + winner + " | Round: " + round + " | Time: " + completionTimeMs + "ms/" + totalTimeMs + "ms | Score: " + base + "+" + (int)bonus + "=" + award);
+            System.out.println("[GameRoom] Game scores: " + host + "=" + gameScores.getOrDefault(host, 0) + ", " + opponent + "=" + gameScores.getOrDefault(opponent, 0));
+            
+            Persistence.addPoints(winner, award);
+            lobby.sendToBoth(this, Message.of(MessageType.ROUND_END, new RoundEnd(id, winner, correct, base, bonus, award)));
+        } else {
+            // No winner (time out)
+            lobby.sendToBoth(this, Message.of(MessageType.ROUND_END, new RoundEnd(id, null, correct, 0, 0, 0)));
+        }
+        
+        if(round >= 4) {
+            // Game ended - determine final winner by total scores
+            int hostScore = gameScores.getOrDefault(host, 0);
+            int opponentScore = gameScores.getOrDefault(opponent, 0);
+            
+            String finalWinner;
+            if (hostScore > opponentScore) {
+                finalWinner = host;
+            } else if (opponentScore > hostScore) {
+                finalWinner = opponent;
+            } else {
+                finalWinner = "Hòa";
+            }
+            
+            System.out.println("[GameRoom] Final game result: " + host + "(" + hostScore + ") vs " + opponent + "(" + opponentScore + ") -> Winner: " + finalWinner);
+            
+            var s1 = new Summary(host, 0, 0, 0, 0);
+            var s2 = new Summary(opponent, 0, 0, 0, 0);
+            lobby.sendToBoth(this, Message.of(MessageType.GAME_END, new GameEnd(id, finalWinner, s1, s2)));
+            
+            lobby.snapshot();
+            System.out.println("[GameRoom] Game ended, broadcasted lobby snapshot to update leaderboard");
+        } else { 
+            round++; 
+            startRound(); 
+        }
+    }
 
     private void endRound(String winner, int total, int remain){
         scheduler.shutdownNow(); scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -132,14 +199,48 @@ public void onSurrender(String player) {
     Models.Chat winNotification = new Models.Chat(id, "🏆 System", notificationMessage);
     lobby.sendTo(winner, Message.of(MessageType.CHAT, winNotification));
     
-    // Calculate remaining time for display
-    int msRemaining = Math.max(0, (int)(roundEndAt - System.currentTimeMillis()));
+    System.out.println("[GameRoom] Sent surrender notification to " + winner);
+    
+    // Award winner full points using new scoring system (instant completion = max bonus)
+    int totalTimeMs = Payloads.timeLimitByLength(currentWord.length()) * 1000;
+    int award = Payloads.calculateScore(true, 0, totalTimeMs, round); // 0 completion time = max score
+    int base = Payloads.baseScoreByRound(round);
+    double bonus = base; // Full bonus for surrender win
+    
+    System.out.println("[GameRoom] Surrender win - Winner: " + winner + " | Round: " + round + " | Score: " + base + "+" + (int)bonus + "=" + award);
+    
+    // Award points and send round end
+    Persistence.addPoints(winner, award);
+    
+    // Update game scores for proper winner determination
+    gameScores.put(winner, gameScores.getOrDefault(winner, 0) + award);
+    System.out.println("[GameRoom] Game scores after surrender: " + gameScores);
+    
+    lobby.sendToBoth(this, Message.of(MessageType.ROUND_END, new RoundEnd(id, winner, currentWord, base, bonus, award)));
     
     // Force round to 4 to end game immediately
     round = 4;
     
-    // Award full points to opponent, zero to surrendering player
-    endRound(winner, msRemaining, 0);
+    // End game with proper total score comparison
+    int hostScore = gameScores.getOrDefault(host, 0);
+    int opponentScore = gameScores.getOrDefault(opponent, 0);
+    String finalWinner;
+    if (hostScore > opponentScore) {
+        finalWinner = host;
+    } else if (opponentScore > hostScore) {
+        finalWinner = opponent;
+    } else {
+        finalWinner = null; // Actual tie
+    }
+    
+    System.out.println("[GameRoom] Final game winner (surrender): " + finalWinner + " | Host: " + hostScore + ", Opponent: " + opponentScore);
+    
+    var s1 = new Summary(host, 0, 0, 0, 0);
+    var s2 = new Summary(opponent, 0, 0, 0, 0);
+    lobby.sendToBoth(this, Message.of(MessageType.GAME_END, new GameEnd(id, finalWinner, s1, s2)));
+    
+    lobby.snapshot();
+    System.out.println("[GameRoom] Game ended due to surrender, broadcasted lobby snapshot");
 }
 
 public void onDisconnect(String user){ /* you can award win to remaining player */ }

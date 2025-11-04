@@ -1,0 +1,71 @@
+========================================
+🎯 TEST NGAY - WINDOWS
+========================================
+
+IP Mac: 192.168.0.6
+Port: 8888
+Status: ✅ ĐANG CHẠY
+
+========================================
+📋 CHECKLIST CHO WINDOWS
+========================================
+
+[ ] 1. Kiểm tra cùng WiFi với Mac
+    - Mở WiFi settings trên Windows
+    - Xem tên WiFi có giống Mac không
+    
+[ ] 2. Thử ping (có thể fail, không sao)
+    cmd: ping 192.168.0.6
+    
+[ ] 3. MỞ BROWSER (Chrome/Edge)
+    Gõ CHÍNH XÁC:
+    
+    http://192.168.0.6:8888/
+    
+    (Có dấu : hai chấm và dấu / cuối)
+    
+[ ] 4. Nếu không được, thử:
+    - Ctrl + F5 (xóa cache)
+    - Chế độ ẩn danh (Ctrl + Shift + N)
+    - Browser khác (Edge, Firefox)
+    
+[ ] 5. Thử PowerShell:
+    curl http://192.168.0.6:8888/
+    
+[ ] 6. Nếu vẫn không được:
+    - Tắt Windows Firewall tạm thời
+    - Thử dùng Hotspot điện thoại
+
+========================================
+🔥 NHANH NHẤT: DÙNG HOTSPOT
+========================================
+
+1. Bật Hotspot trên điện thoại
+2. Mac kết nối vào hotspot
+3. Windows kết nối vào CÙNG hotspot
+4. Trên Mac chạy:
+   ifconfig | grep "inet "
+   (Ghi lại IP mới, VD: 172.20.10.2)
+5. Windows mở browser:
+   http://[IP_MỚI]:8888/
+
+========================================
+📞 BÁO LẠI KẾT QUẢ
+========================================
+
+Nếu không được, chụp màn hình:
+1. Lỗi trên browser
+2. Kết quả lệnh: ipconfig
+3. Tên WiFi đang kết nối
+
+========================================
+✅ XÁC NHẬN MAC
+========================================
+
+Server đang chạy: ✅
+IP chính xác: 192.168.0.6 ✅  
+Port mở: 8888 ✅
+Test thành công: ✅
+
+Vấn đề là ở máy Windows hoặc router!
+========================================

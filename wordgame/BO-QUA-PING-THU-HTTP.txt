@@ -1,0 +1,145 @@
+════════════════════════════════════════════════════════════════
+✅ SERVER MAC ĐANG HOẠT ĐỘNG BÌNH THƯỜNG!
+════════════════════════════════════════════════════════════════
+
+Server Status: ✅ ONLINE
+IP Address: 192.168.0.6
+HTTP Port: 8888
+Game Port: 7777
+
+════════════════════════════════════════════════════════════════
+
+🚨 QUAN TRỌNG: BỎ QUA PING!
+
+Mac thường CHẶN ICMP ping → Ping fail là BÌNH THƯỜNG!
+
+"Destination host unreachable" KHÔNG có nghĩa là không kết nối được!
+
+════════════════════════════════════════════════════════════════
+
+🎯 CHO NGƯỜI DÙNG WINDOWS - LÀM NGAY:
+
+┌────────────────────────────────────────────────────────────┐
+│ BƯỚC 1: MỞ CHROME/EDGE (KHÔNG PHẢI CMD)                   │
+└────────────────────────────────────────────────────────────┘
+
+Gõ địa chỉ này vào thanh địa chỉ browser:
+
+    http://192.168.0.6:8888/
+
+Nhấn Enter và đợi 5 giây.
+
+┌────────────────────────────────────────────────────────────┐
+│ KẾT QUẢ KỲ VỌNG:                                          │
+└────────────────────────────────────────────────────────────┘
+
+✅ THÀNH CÔNG nếu thấy:
+   - Trang màu TÍM/Gradient
+   - Tiêu đề: "🎮 Word Game - Download Center"
+   - Nút download "Game Client" và "Game Server"
+
+❌ THẤT BẠI nếu thấy:
+   - "This site can't be reached"
+   - "ERR_CONNECTION_TIMED_OUT"
+   - Trang trắng hoặc loading mãi
+
+┌────────────────────────────────────────────────────────────┐
+│ BƯỚC 2: NẾU BROWSER THÀNH CÔNG                            │
+└────────────────────────────────────────────────────────────┘
+
+1. Click nút "🎮 Game Client"
+2. File JAR (~15MB) sẽ tự động download
+3. Mở PowerShell/CMD:
+
+   cd Downloads
+   java -jar client-1.0.0-jar-with-dependencies.jar
+
+4. Đăng nhập và chơi!
+
+┌────────────────────────────────────────────────────────────┐
+│ BƯỚC 3: NẾU BROWSER KHÔNG ĐƯỢC - THỬ POWERSHELL           │
+└────────────────────────────────────────────────────────────┘
+
+1. Nhấn Windows + X
+2. Chọn "Windows PowerShell"
+3. Gõ:
+
+   Test-NetConnection -ComputerName 192.168.0.6 -Port 8888
+
+4. Đợi kết quả (15-30 giây)
+
+Kết quả:
+✅ TcpTestSucceeded : True  → HTTP hoạt động, dùng browser!
+❌ TcpTestSucceeded : False → Firewall chặn, xem BƯỚC 4
+
+┌────────────────────────────────────────────────────────────┐
+│ BƯỚC 4: NẾU VẪN KHÔNG ĐƯỢC - TẮT FIREWALL                 │
+└────────────────────────────────────────────────────────────┘
+
+1. Nhấn Windows + R
+2. Gõ: firewall.cpl
+3. Nhấn Enter
+4. Click "Turn Windows Defender Firewall on or off"
+5. Chọn "Turn off" cho CẢ HAI:
+   ☑ Private network
+   ☑ Public network
+6. Click OK
+7. Thử lại browser: http://192.168.0.6:8888/
+
+════════════════════════════════════════════════════════════════
+
+💡 TẠI SAO PING FAIL NHƯNG VẪN VÀO ĐƯỢC?
+
+PING (ICMP):
+- Protocol: ICMP
+- Port: Không có
+- Mac thường CHẶN ping mặc định
+- Fail = Bình thường!
+
+HTTP (Web):
+- Protocol: TCP
+- Port: 8888
+- Mac đang MỞ port này
+- Hoạt động độc lập với ping!
+
+Vì vậy:
+❌ Ping fail
+✅ HTTP vẫn OK
+
+════════════════════════════════════════════════════════════════
+
+🔍 DEBUG - NẾU VẪN KHÔNG ĐƯỢC:
+
+Trên Windows, gửi cho tôi kết quả 3 lệnh này:
+
+1. ipconfig
+   (Kiểm tra IP của Windows)
+
+2. Test-NetConnection -ComputerName 192.168.0.6 -Port 8888
+   (Test kết nối HTTP)
+
+3. Screenshot lỗi trên browser khi vào:
+   http://192.168.0.6:8888/
+
+════════════════════════════════════════════════════════════════
+
+⚡ XÁC SUẤT THÀNH CÔNG:
+
+Nếu trước đó bạn vào được → Bây giờ chỉ cần:
+
+✅ Mở browser
+✅ Gõ: http://192.168.0.6:8888/
+✅ Download client
+✅ Chạy game
+
+Không cần sửa router, không cần hotspot!
+
+════════════════════════════════════════════════════════════════
+
+📞 BÁO LẠI KẾT QUẢ:
+
+□ Browser có hiển thị trang Word Game không?
+□ Test-NetConnection có TcpTestSucceeded: True không?
+□ Firewall đã tắt chưa?
+
+════════════════════════════════════════════════════════════════

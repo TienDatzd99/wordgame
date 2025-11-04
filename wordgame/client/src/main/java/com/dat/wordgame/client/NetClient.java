@@ -25,7 +25,9 @@ public class NetClient implements Closeable {
     }
     
     public void send(Message m) {
+        System.out.println("[NetClient] Sending message: " + m.type + " | Connected: " + !sock.isClosed());
         out.println(Json.encode(m));
+        out.flush(); // Ensure message is sent immediately
     }
     
     public void listen(Consumer<Message> on) {

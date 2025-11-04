@@ -33,6 +33,7 @@ public class GameView extends JFrame {
     private JLabel wordLabel;
     private JLabel timeLabel;
     private JLabel scoreLabel;
+    private JLabel opponentScoreLabel;
     private JPanel lettersPanel; // 26 letters A-Z
     private JPanel answerSlotsPanel; // Empty slots based on word length
     private JLabel countdownLabel; // Countdown label
@@ -47,6 +48,8 @@ public class GameView extends JFrame {
     
     // Game state
     private int currentScore = 0;
+    private int opponentScore = 0;
+    private String opponentName = "";
     private int round = 1;
     private String maskedWord = "";
 
@@ -75,6 +78,14 @@ public class GameView extends JFrame {
         this.gameId = gameId;
         this.availableLetters = new ArrayList<>();
         this.parentLobby = null; // Will be set by LobbyView
+        
+        // Find opponent name (the other player who is not current user)
+        for (String player : players) {
+            if (!player.equals(username)) {
+                this.opponentName = player;
+                break;
+            }
+        }
         
         initializeUI();
         setupEventHandlers();
@@ -167,15 +178,21 @@ public class GameView extends JFrame {
         timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         timeLabel.setForeground(Color.YELLOW);
         
-        scoreLabel = new JLabel("🏆 Điểm: " + currentScore);
+        scoreLabel = new JLabel("🏆 Tôi: " + currentScore);
         scoreLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         scoreLabel.setForeground(Color.WHITE);
+        
+        opponentScoreLabel = new JLabel("🎯 " + (opponentName.isEmpty() ? "Đối thủ" : opponentName) + ": " + opponentScore);
+        opponentScoreLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        opponentScoreLabel.setForeground(new Color(255, 182, 193)); // Light pink color
         
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         infoPanel.setOpaque(false);
         infoPanel.add(timeLabel);
-        infoPanel.add(Box.createHorizontalStrut(20));
+        infoPanel.add(Box.createHorizontalStrut(15));
         infoPanel.add(scoreLabel);
+        infoPanel.add(Box.createHorizontalStrut(15));
+        infoPanel.add(opponentScoreLabel);
         
         panel.add(titleLabel, BorderLayout.WEST);
         panel.add(infoPanel, BorderLayout.EAST);
@@ -661,6 +678,9 @@ public class GameView extends JFrame {
             updateLettersPanel(); // Show all 26 letters
             updateTimeDisplay();
             
+            // Reset guess progress counters for new round
+            resetGuessProgress();
+            
             statusLabel.setText("🎯 Vòng " + round + " - Tìm từ có " + maskedWord.length() + " chữ cái!");
             
             // Start 5-second countdown before enabling game
@@ -696,12 +716,17 @@ public class GameView extends JFrame {
             int points = roundEnd.totalAward();
             
             if (winner != null && winner.equals(currentUser)) {
+                // Current user won this round
                 currentScore += points;
-                scoreLabel.setText("🏆 Điểm: " + currentScore);
+                scoreLabel.setText("🏆 Tôi: " + currentScore);
                 statusLabel.setText("🎉 Bạn thắng vòng này! Từ đúng: " + correctWord + " (+"+points+" điểm)");
             } else if (winner != null) {
-                statusLabel.setText("😔 Vòng này thắng: " + winner + ". Từ đúng: " + correctWord);
+                // Opponent won this round
+                opponentScore += points;
+                opponentScoreLabel.setText("🎯 " + opponentName + ": " + opponentScore);
+                statusLabel.setText("😔 Vòng này thắng: " + winner + ". Từ đúng: " + correctWord + " (+"+points+" điểm)");
             } else {
+                // No winner (timeout)
                 statusLabel.setText("⏱️ Hết giờ! Từ đúng: " + correctWord);
             }
             
@@ -841,6 +866,12 @@ public class GameView extends JFrame {
         lettersPanel.repaint();
     }
 
+    private void resetGuessProgress() {
+        // Reset guess progress displays for new round
+        myGuessProgressLabel.setText("🔤 Tôi: 0/" + maskedWord.length());
+        opponentGuessProgressLabel.setText("🔤 " + opponentName + ": 0/" + maskedWord.length());
+    }
+
     private void submitGuess() {
         if (!gameActive) return;
         
@@ -877,21 +908,32 @@ public class GameView extends JFrame {
     }
     
     private void showIncorrectFeedback() {
-        // Flash red border around answer slots
-        answerSlotsPanel.setBorder(BorderFactory.createLineBorder(Color.RED, 3));
+        // Flash red border around each answer slot
+        for (JButton slot : answerSlots) {
+            slot.setBorder(BorderFactory.createLineBorder(Color.RED, 3));
+        }
         
-        // Reset border after 1 second
+        // Reset borders after 1 second
         Timer timer = new Timer(1000, e -> {
-            answerSlotsPanel.setBorder(null);
+            resetSlotBorders();
         });
         timer.setRepeats(false);
         timer.start();
     }
     
     private void showCorrectFeedback() {
-        // Flash green border around answer slots
-        answerSlotsPanel.setBorder(BorderFactory.createLineBorder(new Color(46, 204, 113), 3));
+        // Show green border around each answer slot
+        for (JButton slot : answerSlots) {
+            slot.setBorder(BorderFactory.createLineBorder(new Color(46, 204, 113), 3));
+        }
         statusLabel.setText("✅ Chính xác! Đợi đối thủ...");
+    }
+    
+    private void resetSlotBorders() {
+        // Reset to default white border
+        for (JButton slot : answerSlots) {
+            slot.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 150), 3, true));
+        }
     }
 
     private void sendChat() {
@@ -958,8 +1000,13 @@ public class GameView extends JFrame {
                 
                 System.out.println("[GameView] Sent SURRENDER message");
                 
-                // Return to lobby immediately
-                returnToLobby();
+                // Wait a bit for server to process and notify opponent before returning to lobby
+                Timer delayTimer = new Timer(1500, e -> {
+                    returnToLobby();
+                });
+                delayTimer.setRepeats(false);
+                delayTimer.start();
+                
             } catch (Exception e) {
                 showError("Lỗi khi thoát game: " + e.getMessage());
             }

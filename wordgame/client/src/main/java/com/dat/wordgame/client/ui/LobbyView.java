@@ -550,7 +550,7 @@ public class LobbyView extends JFrame {
         players.add(currentUser); // Host is first player
         
         // Open RoomView and hide (not dispose) this lobby view
-        RoomView roomView = new RoomView(netClient, currentUser, roomId, players);
+        RoomView roomView = new RoomView(netClient, currentUser, roomId, players, this);
         roomView.setVisible(true);
         this.setVisible(false); // Hide instead of dispose
     }

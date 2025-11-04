@@ -99,7 +99,9 @@ public class ClientSession implements Runnable {
                 Models.Chat chat = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.Chat.class);
                 ChatService.broadcast(chat);
             }
-            case INVITE_ACCEPT, INVITE_REJECT, INVITE_SEND, GUESS_SUBMIT -> 
+            case INVITE_ACCEPT, INVITE_REJECT, INVITE_SEND, GUESS_SUBMIT, SURRENDER,
+                 FRIEND_REQUEST_SEND, FRIEND_REQUEST_ACCEPT, FRIEND_REQUEST_REJECT, 
+                 FRIEND_LIST_REQ, FRIEND_INVITE_SEND -> 
                 LobbyManager.get().route(username, m);
             default -> {}
         }
