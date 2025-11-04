@@ -428,9 +428,22 @@ public class RoomView extends JFrame {
     private void handleSendChat() {
         String message = chatField.getText().trim();
         if (!message.isEmpty()) {
-            chatArea.append(currentUser + ": " + message + "\n");
-            chatArea.setCaretPosition(chatArea.getDocument().getLength());
-            chatField.setText("");
+            // Send chat message to server instead of just displaying locally
+            try {
+                Models.Chat chatMessage = new Models.Chat(roomId, currentUser, message);
+                Message msg = Message.of(MessageType.CHAT, chatMessage);
+                System.out.println("[RoomView] Sending chat - roomId: " + roomId + ", from: " + currentUser + ", message: " + message);
+                netClient.send(msg);
+                System.out.println("[RoomView] Chat message sent successfully");
+                chatField.setText("");
+            } catch (Exception e) {
+                System.err.println("[RoomView] Error sending chat message: " + e.getMessage());
+                e.printStackTrace();
+                // Fallback - show locally if network fails
+                chatArea.append(currentUser + ": " + message + " (Chỉ bạn thấy - lỗi mạng)\n");
+                chatArea.setCaretPosition(chatArea.getDocument().getLength());
+                chatField.setText("");
+            }
         }
     }
 
@@ -463,6 +476,12 @@ public class RoomView extends JFrame {
         System.out.println("[RoomView] handleMessage called with type: " + message.type);
         SwingUtilities.invokeLater(() -> {
             switch (message.type) {
+                case CHAT -> {
+                    Models.Chat chatMessage = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.Chat.class);
+                    System.out.println("[RoomView] Received chat from " + chatMessage.from() + ": " + chatMessage.text());
+                    chatArea.append(chatMessage.from() + ": " + chatMessage.text() + "\n");
+                    chatArea.setCaretPosition(chatArea.getDocument().getLength());
+                }
                 case FRIEND_LIST_RESP -> {
                     System.out.println("[RoomView] Received FRIEND_LIST_RESP, isInviteDialogPending: " + isInviteDialogPending);
                     if (isInviteDialogPending) {

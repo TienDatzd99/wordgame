@@ -138,6 +138,20 @@ public class LobbyManager {
                     System.out.println("SURRENDER: " + surrender.player() + " surrendered in room " + surrender.roomId());
                 }
             }
+            case CHAT -> {
+                Models.Chat chat = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.Chat.class);
+                System.out.println("[LobbyManager] CHAT received from " + from + " in room " + chat.roomId() + ": " + chat.text());
+                
+                // Find the room and broadcast chat to both players
+                GameRoom room = rooms.get(chat.roomId());
+                if (room != null) {
+                    // Broadcast chat message to both players in the room
+                    sendToBoth(room, Message.of(MessageType.CHAT, chat));
+                    System.out.println("[LobbyManager] Chat message broadcasted to both players in room " + chat.roomId());
+                } else {
+                    System.out.println("[LobbyManager] Room not found for chat message: " + chat.roomId());
+                }
+            }
             default -> {}
         }
     }
