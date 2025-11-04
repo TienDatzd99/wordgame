@@ -153,5 +153,35 @@ public static List<String> getPendingFriendRequests(String username) {
     }catch(Exception e){ e.printStackTrace(); return List.of(); }
 }
 
+public record UserSearchRow(String username, int points, boolean isFriend) {}
+
+public static List<UserSearchRow> searchUsers(String searchText, String requester) {
+    try(var c=conn(); var ps=c.prepareStatement(
+        "SELECT u.username, u.points, " +
+        "CASE WHEN f.user1 IS NOT NULL OR f2.user1 IS NOT NULL THEN 1 ELSE 0 END as is_friend " +
+        "FROM users u " +
+        "LEFT JOIN friends f ON (f.user1=? AND f.user2=u.username AND f.status='accepted') " +
+        "LEFT JOIN friends f2 ON (f2.user1=u.username AND f2.user2=? AND f2.status='accepted') " +
+        "WHERE u.username LIKE ? AND u.username != ? " +
+        "ORDER BY is_friend DESC, u.points DESC LIMIT 10"
+    )){
+        ps.setString(1, requester);
+        ps.setString(2, requester);
+        ps.setString(3, "%" + searchText + "%");
+        ps.setString(4, requester);
+        try(var rs=ps.executeQuery()){
+            var out=new ArrayList<UserSearchRow>(); 
+            while(rs.next()) {
+                out.add(new UserSearchRow(
+                    rs.getString("username"), 
+                    rs.getInt("points"), 
+                    rs.getInt("is_friend") == 1
+                ));
+            }
+            return out;
+        }
+    }catch(Exception e){ e.printStackTrace(); return List.of(); }
+}
+
 private static Connection conn() throws Exception { return DriverManager.getConnection(ServerConfig.DB_URL); }
 }

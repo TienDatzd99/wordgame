@@ -13,6 +13,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -29,11 +31,14 @@ public class LobbyView extends JFrame {
     private DefaultTableModel playersTableModel;
     private DefaultTableModel rankingTableModel;
     private JButton startGameButton;
+    private JButton friendsButton;
     private JButton refreshButton;
     private JButton logoutButton;
     private String currentUser;
     private GameView currentGameView; // Store reference to forward messages
+    private RoomView currentRoomView; // Store reference to forward friend messages  
     private List<Message> pendingGameMessages = new ArrayList<>(); // Buffer messages until GameView ready
+    private boolean waitingForFriendList = false; // Flag to track when user wants friend dialog
 
     // Dark theme gradient background panel class
     private static class GradientPanel extends JPanel {
@@ -57,6 +62,8 @@ public class LobbyView extends JFrame {
         this.netClient = netClient;
         this.currentUser = username;
         
+        System.out.println("[LobbyView] Constructor called for user: " + username);
+        
         initializeUI();
         setupEventHandlers();
         
@@ -67,6 +74,7 @@ public class LobbyView extends JFrame {
     }
 
     private void initializeUI() {
+        System.out.println("[LobbyView] initializeUI() called");
         setTitle("WordGame - Lobby");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
@@ -424,12 +432,20 @@ public class LobbyView extends JFrame {
         panel.setOpaque(false);
         
         startGameButton = createModernButton("🏠 Tạo phòng", new Color(46, 204, 113));
+        friendsButton = createModernButton("👥 Bạn bè", new Color(155, 89, 182));
         refreshButton = createModernButton("Làm mới", new Color(52, 152, 219));
         logoutButton = createModernButton("Đăng xuất", new Color(231, 76, 60));
         
+        System.out.println("[LobbyView] Creating bottom panel with friends button: " + friendsButton.getText());
+        System.out.println("[LobbyView] Friends button visible: " + friendsButton.isVisible());
+        System.out.println("[LobbyView] Friends button enabled: " + friendsButton.isEnabled());
+        
         panel.add(startGameButton);
+        panel.add(friendsButton);
         panel.add(refreshButton);
         panel.add(logoutButton);
+        
+        System.out.println("[LobbyView] Bottom panel has " + panel.getComponentCount() + " components");
         
         return panel;
     }
@@ -480,6 +496,16 @@ public class LobbyView extends JFrame {
                 logout();
             }
         });
+        
+        friendsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("[LobbyView] Friends button clicked!");
+                showFriendsDialog();
+            }
+        });
+        
+
     }
 
     public void requestPlayersList() { // Changed to public
@@ -549,10 +575,10 @@ public class LobbyView extends JFrame {
         List<String> players = new java.util.ArrayList<>();
         players.add(currentUser); // Host is first player
         
-        // Open RoomView and hide (not dispose) this lobby view
-        RoomView roomView = new RoomView(netClient, currentUser, roomId, players, this);
-        roomView.setVisible(true);
-        this.setVisible(false); // Hide instead of dispose
+        // Open RoomView and hide (not dispose) this lobby view, pass 'this' to preserve data
+        currentRoomView = new RoomView(netClient, currentUser, roomId, players, this);
+        currentRoomView.setVisible(true);
+        this.setVisible(false); // Hide instead of dispose to preserve data
     }
 
     public void onGameStarted(List<String> players, String gameId) {
@@ -597,12 +623,32 @@ public class LobbyView extends JFrame {
     public void handleMessage(Message message) {
         System.out.println("LobbyView: handleMessage called with type: " + message.type);
         
+        // Check if this is a friend system message
+        if (message.type == MessageType.FRIEND_LIST_RESP || message.type == MessageType.FRIEND_INVITE_RESP || 
+            message.type == MessageType.ROOM_INVITE_RESP || message.type == MessageType.USER_SEARCH_RESP) {
+            System.out.println("LobbyView: Received friend system message: " + message.type);
+            System.out.println("LobbyView: currentRoomView != null: " + (currentRoomView != null));
+            if (currentRoomView != null) {
+                System.out.println("LobbyView: currentRoomView.isVisible(): " + currentRoomView.isVisible());
+            }
+        }
+        
         // Forward game-related messages to GameView if it exists
         if (currentGameView != null) {
             switch (message.type) {
                 case ROUND_START, ROUND_TICK, ROUND_END, GAME_END, GUESS_UPDATE, CHAT -> {
                     System.out.println("LobbyView: Forwarding " + message.type + " to GameView");
                     currentGameView.onMessage(message);
+                    return; // Don't process in LobbyView
+                }
+                default -> {} // Continue processing in LobbyView
+            }
+        } else if (currentRoomView != null && currentRoomView.isVisible()) {
+            // Forward chat to RoomView if user is in room (before game starts)
+            switch (message.type) {
+                case CHAT -> {
+                    System.out.println("LobbyView: Forwarding " + message.type + " to RoomView");
+                    currentRoomView.handleMessage(message);
                     return; // Don't process in LobbyView
                 }
                 default -> {} // Continue processing in LobbyView
@@ -677,8 +723,86 @@ public class LobbyView extends JFrame {
                     openGameView(roomState);
                 }
                 case ROOM_CREATED -> {
-                    // When room is created, we'll get notification - don't clear data yet
+                    // When room is created from friend invite, open RoomView
                     System.out.println("LobbyView: ROOM_CREATED received");
+                    System.out.println("LobbyView: Raw payload: " + Json.GSON.toJson(message.payload));
+                    Models.RoomState roomState = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.RoomState.class);
+                    System.out.println("LobbyView: Parsed RoomState - roomId=" + roomState.roomId() + 
+                                      ", host=" + roomState.host() + 
+                                      ", opponent=" + roomState.opponent());
+                    handleRoomCreated(roomState);
+                }
+                case ROOM_INVITE_RECEIVE -> {
+                    System.out.println("[LobbyView] Received ROOM_INVITE_RECEIVE message!");
+                    Models.RoomInviteReceive invite = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.RoomInviteReceive.class);
+                    System.out.println("[LobbyView] Room invite from: " + invite.from() + ", roomId: " + invite.roomId());
+                    handleRoomInviteReceived(invite.from(), invite.roomId());
+                }
+                case FRIEND_REQUEST_RECEIVE -> {
+                    Models.FriendRequestReceive request = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.FriendRequestReceive.class);
+                    handleFriendRequestReceived(request.from());
+                }
+                case FRIEND_LIST_RESP -> {
+                    System.out.println("[LobbyView] FRIEND_LIST_RESP received. waitingForFriendList: " + waitingForFriendList + 
+                                     ", RoomView null? " + (currentRoomView == null) + 
+                                     ", visible? " + (currentRoomView != null ? currentRoomView.isVisible() : "n/a"));
+                    
+                    if (waitingForFriendList) {
+                        // User clicked friends button in LobbyView - show dialog
+                        waitingForFriendList = false;
+                        System.out.println("[LobbyView] Showing friends dialog from LobbyView button");
+                        Models.FriendListResp response = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.FriendListResp.class);
+                        showFriendsDialogWithData(response.friends());
+                    } else if (currentRoomView != null && currentRoomView.isVisible()) {
+                        // Forward to RoomView if it's active
+                        System.out.println("[LobbyView] Forwarding FRIEND_LIST_RESP to RoomView");
+                        currentRoomView.handleMessage(message);
+                    } else {
+                        // Handle in LobbyView (legacy)
+                        System.out.println("[LobbyView] Handling FRIEND_LIST_RESP in LobbyView (legacy)");
+                        Models.FriendListResp response = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.FriendListResp.class);
+                        handleFriendListResponse(response.friends());
+                    }
+                }
+                case FRIEND_INVITE_RESP -> {
+                    if (currentRoomView != null && currentRoomView.isVisible()) {
+                        // Forward to RoomView if it's active
+                        currentRoomView.handleMessage(message);
+                    } else {
+                        // Handle in LobbyView
+                        Models.FriendInviteResp response = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.FriendInviteResp.class);
+                        if (response.success()) {
+                            JOptionPane.showMessageDialog(this, response.message(), "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(this, response.message(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                }
+                case ROOM_INVITE_RESP -> {
+                    if (currentRoomView != null && currentRoomView.isVisible()) {
+                        // Forward to RoomView if it's active
+                        currentRoomView.handleMessage(message);
+                    } else {
+                        // Handle in LobbyView
+                        Models.RoomInviteResp response = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.RoomInviteResp.class);
+                        if (response.success()) {
+                            JOptionPane.showMessageDialog(this, response.message(), "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(this, response.message(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                }
+                case USER_SEARCH_RESP -> {
+                    Models.UserSearchResp response = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.UserSearchResp.class);
+                    handleUserSearchResponse(response.results());
+                }
+                case ROOM_LEFT -> {
+                    Models.RoomLeft roomLeft = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.RoomLeft.class);
+                    System.out.println("LobbyView: Player " + roomLeft.playerLeft() + " left room " + roomLeft.roomId());
+                    // Forward to RoomView if it exists
+                    if (currentRoomView != null && currentRoomView.isVisible()) {
+                        currentRoomView.handlePlayerLeft(roomLeft.playerLeft());
+                    }
                 }
                 default -> {}
             }
@@ -736,5 +860,385 @@ public class LobbyView extends JFrame {
         } catch (Exception ex) {
             showError("Lỗi khi phản hồi thách đấu: " + ex.getMessage());
         }
+    }
+    
+    private void handleRoomCreated(Models.RoomState roomState) {
+        System.out.println("LobbyView: handleRoomCreated for room " + roomState.roomId());
+        System.out.println("LobbyView: host=" + roomState.host() + ", opponent=" + roomState.opponent());
+        
+        // Create list of players
+        List<String> players = new ArrayList<>();
+        players.add(roomState.host());
+        if (roomState.opponent() != null && !roomState.opponent().isEmpty()) {
+            players.add(roomState.opponent());
+        }
+        System.out.println("LobbyView: players list size: " + players.size() + ", players: " + players);
+        
+        // Open RoomView (not GameView) so players can chat before starting game
+        currentRoomView = new RoomView(netClient, currentUser, roomState.roomId(), players, this);
+        currentRoomView.setVisible(true);
+        this.setVisible(false); // Hide lobby
+    }
+    
+    private void handleRoomInviteReceived(String fromPlayer, String roomId) {
+        System.out.println("[LobbyView] handleRoomInviteReceived called - from: " + fromPlayer + ", roomId: " + roomId);
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            fromPlayer + " đã mời bạn vào phòng chơi!\n\nBạn có chấp nhận không?",
+            "Lời mời vào phòng",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        System.out.println("[LobbyView] User choice: " + choice);
+        
+        try {
+            if (choice == JOptionPane.YES_OPTION) {
+                // Accept the room invite
+                Models.RoomInviteAccept acceptMsg = new Models.RoomInviteAccept(fromPlayer, currentUser, roomId);
+                System.out.println("[LobbyView] Sending ROOM_INVITE_ACCEPT: from=" + fromPlayer + ", to=" + currentUser + ", roomId=" + roomId);
+                Message msg = Message.of(MessageType.ROOM_INVITE_ACCEPT, acceptMsg);
+                netClient.send(msg);
+            } else {
+                // Reject the room invite
+                Models.RoomInviteReject rejectMsg = new Models.RoomInviteReject(fromPlayer, currentUser, roomId);
+                Message msg = Message.of(MessageType.ROOM_INVITE_REJECT, rejectMsg);
+                netClient.send(msg);
+            }
+        } catch (Exception ex) {
+            showError("Lỗi khi phản hồi lời mời vào phòng: " + ex.getMessage());
+        }
+    }
+    
+    private void showFriendsDialog() {
+        // Set flag that we're waiting for friend list
+        waitingForFriendList = true;
+        
+        // Request friend list from server
+        Message request = Message.of(MessageType.FRIEND_LIST_REQ, new Models.FriendListReq(currentUser));
+        try {
+            netClient.send(request);
+            System.out.println("[LobbyView] Friend list request sent from showFriendsDialog()");
+        } catch (Exception e) {
+            waitingForFriendList = false;
+            showError("Lỗi khi lấy danh sách bạn bè: " + e.getMessage());
+        }
+    }
+    
+
+    
+    private void showFriendsDialogWithData(java.util.List<Models.FriendInfo> friends) {
+        JDialog dialog = new JDialog(this, "Danh sách bạn bè", true);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        
+        // Create main panel with glassmorphism
+        JPanel mainPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Dark gradient background
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(88, 86, 214),
+                    0, getHeight(), new Color(55, 48, 163)
+                );
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        
+        // Header
+        JLabel headerLabel = new JLabel("Danh sách bạn bè (" + friends.size() + ")", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        headerLabel.setForeground(Color.WHITE);
+        headerLabel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        
+        // Friends table
+        String[] columns = {"Tên", "Trạng thái", "Điểm"};
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        
+        // Sort friends: online first, then by points
+        friends.sort((a, b) -> {
+            if (a.isOnline() && !b.isOnline()) return -1;
+            if (!a.isOnline() && b.isOnline()) return 1;
+            return Integer.compare(b.totalPoints(), a.totalPoints());
+        });
+        
+        for (Models.FriendInfo friend : friends) {
+            String status = friend.isOnline() ? "🟢 Online" : "🔴 Offline";
+            model.addRow(new Object[]{friend.username(), status, friend.totalPoints()});
+        }
+        
+        JTable table = new JTable(model);
+        styleGlassTable(table);
+        table.setRowHeight(35);
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        
+        // Search panel
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setOpaque(false);
+        
+        JLabel searchLabel = new JLabel("🔍 Tìm kiếm:");
+        searchLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        searchLabel.setForeground(Color.WHITE);
+        
+        JTextField searchField = new JTextField(20);
+        searchField.setFont(new Font("Arial", Font.PLAIN, 14));
+        searchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 2),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+        
+        JButton searchBtn = createModernButton("Tìm", new Color(52, 152, 219));
+        
+        searchBtn.addActionListener(e -> {
+            String searchText = searchField.getText().trim();
+            if (!searchText.isEmpty()) {
+                showUserSearchDialog(searchText);
+            }
+        });
+        
+        // Allow search on Enter
+        searchField.addActionListener(e -> searchBtn.doClick());
+        
+        searchPanel.add(searchLabel);
+        searchPanel.add(searchField);
+        searchPanel.add(searchBtn);
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.setOpaque(false);
+        
+        JButton addFriendBtn = createModernButton("➕ Thêm bạn", new Color(46, 204, 113));
+        JButton closeBtn = createModernButton("Đóng", new Color(231, 76, 60));
+        
+        addFriendBtn.addActionListener(e -> {
+            String friendName = JOptionPane.showInputDialog(dialog, "Nhập tên người chơi để kết bạn:");
+            if (friendName != null && !friendName.trim().isEmpty()) {
+                sendFriendRequest(friendName.trim());
+            }
+        });
+        
+        closeBtn.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(addFriendBtn);
+        buttonPanel.add(closeBtn);
+        
+        // Add search panel between header and friends list
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 15));
+        centerPanel.setOpaque(false);
+        centerPanel.add(searchPanel, BorderLayout.NORTH);
+        centerPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        mainPanel.add(headerLabel, BorderLayout.NORTH);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+    
+    private void showUserSearchDialog(String searchText) {
+        // Send search request to server instead of showing dialog immediately
+        try {
+            Models.UserSearchReq request = new Models.UserSearchReq(searchText, currentUser);
+            Message msg = Message.of(MessageType.USER_SEARCH_REQ, request);
+            netClient.send(msg);
+        } catch (Exception e) {
+            showError("Lỗi khi tìm kiếm người chơi: " + e.getMessage());
+        }
+    }
+    
+    private void handleUserSearchResponse(java.util.List<Models.UserSearchResult> results) {
+        String searchText = ""; // Store search text for UI display if needed
+        
+        JDialog searchDialog = new JDialog(this, "Kết quả tìm kiếm", true);
+        searchDialog.setSize(500, 400);
+        searchDialog.setLocationRelativeTo(this);
+        
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 20));
+        mainPanel.setOpaque(false);
+        mainPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
+        
+        // Glass background
+        mainPanel = new JPanel(new BorderLayout(0, 20)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Glassmorphism background
+                g2d.setColor(new Color(255, 255, 255, 60));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
+                
+                // Border
+                g2d.setStroke(new BasicStroke(2));
+                g2d.setColor(new Color(255, 255, 255, 100));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 25, 25);
+            }
+        };
+        mainPanel.setOpaque(false);
+        mainPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
+        
+        JLabel headerLabel = new JLabel("🔍 Tìm thấy " + results.size() + " kết quả");
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        headerLabel.setForeground(Color.WHITE);
+        headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Search results table
+        String[] columnNames = {"Tên người chơi", "Điểm số", "Trạng thái", "Thao tác"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // All columns read-only
+            }
+        };
+        
+        // Add real search results
+        for (Models.UserSearchResult result : results) {
+            String status = result.isFriend() ? "🟢 Đã kết bạn" : "⚪ Chưa kết bạn";
+            String action = result.isFriend() ? "Mời chơi" : "Kết bạn";
+            model.addRow(new Object[]{result.username(), result.points(), status, action});
+        }
+        
+        JTable table = new JTable(model);
+        styleGlassTable(table);
+        table.setRowHeight(40);
+        
+        // Handle row clicks for actions
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+                
+                if (row >= 0 && col == 3) { // Action column
+                    Models.UserSearchResult result = results.get(row);
+                    if (result.isFriend()) {
+                        // Send game invite to friend
+                        int confirm = JOptionPane.showConfirmDialog(searchDialog, 
+                            "Gửi lời mời chơi đến " + result.username() + "?", 
+                            "Xác nhận", 
+                            JOptionPane.YES_NO_OPTION);
+                        
+                        if (confirm == JOptionPane.YES_OPTION) {
+                            sendGameInviteToFriend(result.username());
+                            searchDialog.dispose();
+                        }
+                    } else {
+                        // Send friend request
+                        int confirm = JOptionPane.showConfirmDialog(searchDialog, 
+                            "Gửi lời mời kết bạn đến " + result.username() + "?", 
+                            "Xác nhận", 
+                            JOptionPane.YES_NO_OPTION);
+                        
+                        if (confirm == JOptionPane.YES_OPTION) {
+                            sendFriendRequest(result.username());
+                            searchDialog.dispose();
+                        }
+                    }
+                }
+            }
+        });
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.setOpaque(false);
+        
+        JButton closeBtn = createModernButton("Đóng", new Color(231, 76, 60));
+        closeBtn.addActionListener(e -> searchDialog.dispose());
+        buttonPanel.add(closeBtn);
+        
+        mainPanel.add(headerLabel, BorderLayout.NORTH);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        searchDialog.add(mainPanel);
+        searchDialog.getContentPane().setBackground(new Color(88, 86, 214));
+        searchDialog.setVisible(true);
+    }
+    
+    private void sendGameInviteToFriend(String friendName) {
+        try {
+            String roomId = "room_" + System.currentTimeMillis();
+            Models.RoomInviteSend invite = new Models.RoomInviteSend(currentUser, friendName, roomId);
+            Message msg = Message.of(MessageType.ROOM_INVITE_SEND, invite);
+            netClient.send(msg);
+            JOptionPane.showMessageDialog(this, 
+                "Đã gửi lời mời chơi đến " + friendName + "!", 
+                "Thông báo", 
+                JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            showError("Lỗi khi gửi lời mời chơi: " + e.getMessage());
+        }
+    }
+
+    private void sendFriendRequest(String friendName) {
+        try {
+            Models.FriendRequest request = new Models.FriendRequest(currentUser, friendName);
+            Message msg = Message.of(MessageType.FRIEND_REQUEST_SEND, request);
+            netClient.send(msg);
+            JOptionPane.showMessageDialog(this, 
+                "Đã gửi lời mời kết bạn đến " + friendName + "!", 
+                "Thông báo", 
+                JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            showError("Lỗi khi gửi lời mời kết bạn: " + e.getMessage());
+        }
+    }
+    
+
+    
+
+    
+    private void handleFriendRequestReceived(String fromPlayer) {
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            fromPlayer + " muốn kết bạn với bạn!\n\nBạn có chấp nhận không?",
+            "Lời mời kết bạn",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        try {
+            if (choice == JOptionPane.YES_OPTION) {
+                Models.FriendRequestAccept accept = new Models.FriendRequestAccept(fromPlayer, currentUser);
+                Message msg = Message.of(MessageType.FRIEND_REQUEST_ACCEPT, accept);
+                netClient.send(msg);
+                JOptionPane.showMessageDialog(this, 
+                    "Đã chấp nhận lời mời kết bạn từ " + fromPlayer + "!", 
+                    "Thông báo", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                Models.FriendRequestReject reject = new Models.FriendRequestReject(fromPlayer, currentUser);
+                Message msg = Message.of(MessageType.FRIEND_REQUEST_REJECT, reject);
+                netClient.send(msg);
+            }
+        } catch (Exception ex) {
+            showError("Lỗi khi phản hồi lời mời kết bạn: " + ex.getMessage());
+        }
+    }
+    
+    private void handleFriendListResponse(java.util.List<Models.FriendInfo> friends) {
+        showFriendsDialogWithData(friends);
+    }
+    
+    public void clearRoomViewReference() {
+        this.currentRoomView = null;
     }
 }

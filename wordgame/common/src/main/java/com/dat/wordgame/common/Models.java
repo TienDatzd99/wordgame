@@ -31,9 +31,20 @@ public record FriendListReq(String username) {}
 public record FriendListResp(List<FriendInfo> friends) {}
 public record FriendInviteSend(String from, String to) {}
 public record FriendInviteResp(boolean success, String message) {}
+public record UserSearchReq(String searchText, String requester) {}
+public record UserSearchResp(List<UserSearchResult> results) {}
+public record UserSearchResult(String username, int points, boolean isFriend) {}
+
+// Room invite system (for inviting to join room before game starts)
+public record RoomInviteSend(String from, String to, String roomId) {}
+public record RoomInviteReceive(String from, String roomId) {}
+public record RoomInviteResp(boolean success, String message) {}
+public record RoomInviteAccept(String from, String to, String roomId) {}
+public record RoomInviteReject(String from, String to, String roomId) {}
 
 // Room/game
 public record RoomState(String roomId, String host, String opponent, int round, String status) {}
+public record RoomLeft(String roomId, String playerLeft, String reason) {}
 public record RoundStart(String roomId, int round, String maskedWord, List<Character> shuffledLetters, int totalTimeSec) {}
 public record RoundTick(String roomId, int remainSec) {}
 public record RoundEnd(String roomId, String winner, String correctWord, int basePoints, double bonus, int totalAward) {}

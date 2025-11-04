@@ -108,22 +108,62 @@ public class LobbyManager {
                 System.out.println("[LobbyManager] Sending FRIEND_LIST_RESP with " + friendInfos.size() + " friends to: " + from);
                 sendTo(from, Message.of(MessageType.FRIEND_LIST_RESP, resp));
             }
-            case FRIEND_INVITE_SEND -> {
-                Models.FriendInviteSend invite = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.FriendInviteSend.class);
+            case ROOM_INVITE_SEND -> {
+                Models.RoomInviteSend invite = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.RoomInviteSend.class);
                 var dst = online.get(invite.to());
                 boolean success = false;
                 String message = "Bạn bè offline hoặc không tồn tại";
                 
+                System.out.println("ROOM_INVITE_SEND: " + invite.from() + " -> " + invite.to() + " (room: " + invite.roomId() + ")");
+                System.out.println("Target user '" + invite.to() + "' online? " + (dst != null));
+                System.out.println("Online users: " + online.keySet());
+                
                 if (dst != null) {
-                    Models.InviteReceive inviteReceive = new Models.InviteReceive(invite.from());
-                    dst.send(Message.of(MessageType.INVITE_RECEIVE, inviteReceive));
-                    success = true;
-                    message = "Đã gửi lời mời thành công";
-                    System.out.println("FRIEND_INVITE_SEND: " + invite.from() + " -> " + invite.to());
+                    try {
+                        Models.RoomInviteReceive roomInvite = new Models.RoomInviteReceive(invite.from(), invite.roomId());
+                        dst.send(Message.of(MessageType.ROOM_INVITE_RECEIVE, roomInvite));
+                        success = true;
+                        message = "Đã gửi lời mời chơi thành công";
+                        System.out.println("Successfully sent ROOM_INVITE_RECEIVE to " + invite.to());
+                    } catch (Exception e) {
+                        System.out.println("Error sending ROOM_INVITE_RECEIVE to " + invite.to() + ": " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
                 
-                Models.FriendInviteResp resp = new Models.FriendInviteResp(success, message);
-                sendTo(from, Message.of(MessageType.FRIEND_INVITE_RESP, resp));
+                Models.RoomInviteResp resp = new Models.RoomInviteResp(success, message);
+                sendTo(from, Message.of(MessageType.ROOM_INVITE_RESP, resp));
+            }
+            case ROOM_INVITE_ACCEPT -> {
+                Models.RoomInviteAccept accept = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.RoomInviteAccept.class);
+                String host = accept.from(); // The person who sent the original invite
+                String opponent = accept.to(); // The person who accepted (current user)
+                String roomId = accept.roomId();
+                
+                System.out.println("ROOM_INVITE_ACCEPT received: from=" + accept.from() + ", to=" + accept.to() + ", roomId=" + roomId);
+                System.out.println("Creating room with host=" + host + ", opponent=" + opponent);
+                
+                // Create room and send ROOM_CREATED to both players so they go to RoomView
+                Models.RoomState roomState = new Models.RoomState(roomId, host, opponent, 1, "waiting");
+                
+                sendTo(host, Message.of(MessageType.ROOM_CREATED, roomState));
+                sendTo(opponent, Message.of(MessageType.ROOM_CREATED, roomState));
+                
+                System.out.println("ROOM_INVITE_ACCEPT: Created room " + roomId + " - " + host + " vs " + opponent);
+            }
+            case ROOM_INVITE_REJECT -> {
+                System.out.println("ROOM_INVITE_REJECT received");
+                // Optional: notify the inviter that invite was rejected
+            }
+            case USER_SEARCH_REQ -> {
+                Models.UserSearchReq req = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.UserSearchReq.class);
+                var searchResults = Persistence.searchUsers(req.searchText(), req.requester());
+                var results = searchResults.stream()
+                    .map(r -> new Models.UserSearchResult(r.username(), r.points(), r.isFriend()))
+                    .toList();
+                Models.UserSearchResp resp = new Models.UserSearchResp(results);
+                sendTo(from, Message.of(MessageType.USER_SEARCH_RESP, resp));
+                System.out.println("USER_SEARCH: " + req.requester() + " searched for '" + req.searchText() + "', found " + results.size() + " results");
             }
             case GUESS_SUBMIT -> {
                 Models.GuessSubmit gs = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.GuessSubmit.class);
@@ -150,6 +190,25 @@ public class LobbyManager {
                     System.out.println("[LobbyManager] Chat message broadcasted to both players in room " + chat.roomId());
                 } else {
                     System.out.println("[LobbyManager] Room not found for chat message: " + chat.roomId());
+                }
+            }
+            case ROOM_LEFT -> {
+                Models.RoomLeft roomLeft = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.RoomLeft.class);
+                System.out.println("[LobbyManager] Player " + roomLeft.playerLeft() + " left room " + roomLeft.roomId());
+                
+                // Find the room and notify other players
+                String roomId = roomLeft.roomId();
+                if (rooms.containsKey(roomId)) {
+                    GameRoom room = rooms.get(roomId);
+                    // Notify other player in the room
+                    String otherPlayer = room.host().equals(roomLeft.playerLeft()) ? room.opponent() : room.host();
+                    if (otherPlayer != null && !otherPlayer.isEmpty()) {
+                        sendTo(otherPlayer, Message.of(MessageType.ROOM_LEFT, roomLeft));
+                        System.out.println("[LobbyManager] Notified " + otherPlayer + " that " + roomLeft.playerLeft() + " left room");
+                    }
+                    // Remove the room since someone left
+                    rooms.remove(roomId);
+                    System.out.println("[LobbyManager] Removed room " + roomId + " due to player leaving");
                 }
             }
             default -> {}

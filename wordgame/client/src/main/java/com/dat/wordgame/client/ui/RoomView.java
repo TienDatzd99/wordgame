@@ -54,6 +54,11 @@ public class RoomView extends JFrame {
     }
 
     public RoomView(NetClient netClient, String username, String roomId, List<String> players, LobbyView parentLobby) {
+        System.out.println("RoomView constructor called:");
+        System.out.println("  username: " + username);
+        System.out.println("  roomId: " + roomId);
+        System.out.println("  players: " + players + " (size: " + (players != null ? players.size() : "null") + ")");
+        
         this.netClient = netClient;
         this.currentUser = username;
         this.roomId = roomId;
@@ -165,6 +170,7 @@ public class RoomView extends JFrame {
         titleLabel.setForeground(Color.WHITE);
         
         // Status (waiting/ready count)
+        System.out.println("RoomView creating statusLabel with players.size(): " + players.size());
         statusLabel = new JLabel(players.size() + "/2 người");
         statusLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         statusLabel.setForeground(new Color(255, 255, 255, 180));
@@ -414,6 +420,16 @@ public class RoomView extends JFrame {
         );
         
         if (confirm == JOptionPane.YES_OPTION) {
+            // Send ROOM_LEFT message to server to notify other players
+            try {
+                Models.RoomLeft roomLeft = new Models.RoomLeft(roomId, currentUser, "player_left");
+                Message msg = Message.of(MessageType.ROOM_LEFT, roomLeft);
+                netClient.send(msg);
+                System.out.println("RoomView: Sent ROOM_LEFT message for " + currentUser);
+            } catch (Exception ex) {
+                System.err.println("Error sending ROOM_LEFT: " + ex.getMessage());
+            }
+            
             // Return to existing lobby view to preserve data
             if (parentLobby != null) {
                 // parentLobby.clearRoomViewReference(); // Clear reference
@@ -491,8 +507,8 @@ public class RoomView extends JFrame {
                         showInviteFriendsDialogWithData(response.friends());
                     }
                 }
-                case FRIEND_INVITE_RESP -> {
-                    Models.FriendInviteResp response = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.FriendInviteResp.class);
+                case ROOM_INVITE_RESP -> {
+                    Models.RoomInviteResp response = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.RoomInviteResp.class);
                     if (response.success()) {
                         JOptionPane.showMessageDialog(this, response.message(), "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                         chatArea.append("📧 " + response.message() + "\n");
@@ -654,8 +670,8 @@ public class RoomView extends JFrame {
     
     private void sendFriendInvite(String friendName) {
         try {
-            Models.FriendInviteSend invite = new Models.FriendInviteSend(currentUser, friendName);
-            Message msg = Message.of(MessageType.FRIEND_INVITE_SEND, invite);
+            Models.RoomInviteSend invite = new Models.RoomInviteSend(currentUser, friendName, roomId);
+            Message msg = Message.of(MessageType.ROOM_INVITE_SEND, invite);
             netClient.send(msg);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, 
@@ -663,6 +679,24 @@ public class RoomView extends JFrame {
                 "Lỗi",
                 JOptionPane.ERROR_MESSAGE);
         }
+    }
+    
+    public void handlePlayerLeft(String playerLeft) {
+        SwingUtilities.invokeLater(() -> {
+            // Remove player from list
+            players.remove(playerLeft);
+            
+            // Update status label
+            statusLabel.setText(players.size() + "/2 người");
+            
+            // Add chat message about player leaving
+            addChatMessage("Hệ thống", playerLeft + " đã rời phòng");
+            
+            // Disable start game button if not enough players
+            startGameButton.setEnabled(players.size() >= 2);
+            
+            System.out.println("RoomView: Player " + playerLeft + " left. Remaining players: " + players);
+        });
     }
     
     public void addChatMessage(String sender, String message) {

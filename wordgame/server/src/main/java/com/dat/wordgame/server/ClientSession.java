@@ -101,7 +101,8 @@ public class ClientSession implements Runnable {
             }
             case INVITE_ACCEPT, INVITE_REJECT, INVITE_SEND, GUESS_SUBMIT, SURRENDER,
                  FRIEND_REQUEST_SEND, FRIEND_REQUEST_ACCEPT, FRIEND_REQUEST_REJECT, 
-                 FRIEND_LIST_REQ, FRIEND_INVITE_SEND -> 
+                 FRIEND_LIST_REQ, FRIEND_INVITE_SEND, USER_SEARCH_REQ,
+                 ROOM_INVITE_SEND, ROOM_INVITE_ACCEPT, ROOM_INVITE_REJECT -> 
                 LobbyManager.get().route(username, m);
             default -> {}
         }
