@@ -1,8 +1,28 @@
 package com.dat.wordgame.server;
 
 
-import com.dat.wordgame.common.*; import com.dat.wordgame.common.Models.*;
-import java.util.*; import java.util.concurrent.*; import java.util.stream.*;
+import java.util.Collections;
+ import java.util.HashMap;
+import java.util.HashSet;
+ import java.util.Map;
+ import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import com.dat.wordgame.common.Message;
+import com.dat.wordgame.common.MessageType;
+import com.dat.wordgame.common.Models;
+import com.dat.wordgame.common.Models.GameEnd;
+import com.dat.wordgame.common.Models.GuessUpdate;
+import com.dat.wordgame.common.Models.RoomState;
+import com.dat.wordgame.common.Models.RoundEnd;
+import com.dat.wordgame.common.Models.RoundStart;
+import com.dat.wordgame.common.Models.RoundTick;
+import com.dat.wordgame.common.Models.Summary;
+import com.dat.wordgame.common.Payloads;
 
 
 public class GameRoom {
@@ -32,8 +52,13 @@ System.out.println("[GameRoom] notifyJoin() called for room " + id);
 System.out.println("[GameRoom] Host: " + host + ", Opponent: " + opponent);
 lobby.sendTo(host, Message.of(MessageType.ROOM_JOINED, new RoomState(id, host, opponent, round, "ready")));
 lobby.sendTo(opponent, Message.of(MessageType.ROOM_JOINED, new RoomState(id, host, opponent, round, "ready")));
-System.out.println("[GameRoom] ROOM_JOINED sent to both players, starting round...");
-startRound();
+System.out.println("[GameRoom] ROOM_JOINED sent to both players, waiting 1 second before starting round...");
+
+// Đợi 1 giây để cả hai client kịp chuyển màn hình trước khi bắt đầu round
+scheduler.schedule(() -> {
+    System.out.println("[GameRoom] Starting round after delay...");
+    startRound();
+}, 1, TimeUnit.SECONDS);
 }
 
 
@@ -150,6 +175,11 @@ if (isCorrect && !playersCorrect.contains(from)) {
             
             System.out.println("[GameRoom] Final game result: " + host + "(" + hostScore + ") vs " + opponent + "(" + opponentScore + ") -> Winner: " + finalWinner);
             
+            // Lưu lịch sử đấu vào database (cả khi hòa)
+            System.out.println("[GameRoom] Saving match result to database...");
+            Persistence.saveMatchResult(host, opponent, finalWinner, hostScore, opponentScore, 0, 0);
+            System.out.println("[GameRoom] Match result saved successfully!");
+            
             var s1 = new Summary(host, 0, 0, 0, 0);
             var s2 = new Summary(opponent, 0, 0, 0, 0);
             lobby.sendToBoth(this, Message.of(MessageType.GAME_END, new GameEnd(id, finalWinner, s1, s2)));
@@ -234,6 +264,12 @@ public void onSurrender(String player) {
     }
     
     System.out.println("[GameRoom] Final game winner (surrender): " + finalWinner + " | Host: " + hostScore + ", Opponent: " + opponentScore);
+    
+    // Lưu lịch sử đấu vào database (cả khi null/hòa)
+    System.out.println("[GameRoom] Saving surrender match result to database...");
+    String winnerToSave = (finalWinner != null) ? finalWinner : "Hòa";
+    Persistence.saveMatchResult(host, opponent, winnerToSave, hostScore, opponentScore, 0, 0);
+    System.out.println("[GameRoom] Surrender match result saved successfully!");
     
     var s1 = new Summary(host, 0, 0, 0, 0);
     var s2 = new Summary(opponent, 0, 0, 0, 0);

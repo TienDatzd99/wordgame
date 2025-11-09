@@ -28,10 +28,10 @@ public class LobbyManager {
 
     void broadcastLobby() {
         var players = online.keySet().stream()
-            .map(u -> new Models.PlayerBrief(u, Persistence.totalPoints(u), "online"))
+            .map(u -> new Models.PlayerBrief(u, Persistence.totalPoints(u), "online", Persistence.totalWins(u)))
             .toList();
         var leaders = Persistence.topPlayers(10).stream()
-            .map(p -> new Models.PlayerBrief(p.name(), p.points(), "top"))
+            .map(p -> new Models.PlayerBrief(p.name(), p.points(), "top", p.wins()))
             .toList();
         var roomBriefs = rooms.values().stream()
             .map(GameRoom::brief)
@@ -60,11 +60,18 @@ public class LobbyManager {
                 Models.InviteAccept accept = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.InviteAccept.class);
                 String host = accept.from(); // The person who sent the original invite
                 String opponent = accept.to(); // The person who accepted (current user)
+                
+                System.out.println("INVITE_ACCEPT received: host=" + host + " (sent invite), opponent=" + opponent + " (accepted)");
+                
                 GameRoom room = new GameRoom(host, opponent, this);
                 rooms.put(room.id(), room);
+                
+                // Đảm bảo gửi ROOM_JOINED cho CẢ HAI người chơi
+                System.out.println("INVITE_ACCEPT: Calling notifyJoin() to send ROOM_JOINED to both players");
                 room.notifyJoin();
+                
                 broadcastLobby();
-                System.out.println("INVITE_ACCEPT: Room created - " + host + " vs " + opponent);
+                System.out.println("INVITE_ACCEPT: Room " + room.id() + " created - " + host + " vs " + opponent);
             }
             case INVITE_REJECT -> { 
                 System.out.println("INVITE_REJECT received");
@@ -165,6 +172,22 @@ public class LobbyManager {
                 sendTo(from, Message.of(MessageType.USER_SEARCH_RESP, resp));
                 System.out.println("USER_SEARCH: " + req.requester() + " searched for '" + req.searchText() + "', found " + results.size() + " results");
             }
+            case MATCH_HISTORY_REQ -> {
+                try {
+                Models.MatchHistoryReq req = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.MatchHistoryReq.class);
+                var history = Persistence.getMatchHistory(req.username(), req.limit());
+                var entries = history.stream()
+                    .map(h -> new Models.MatchHistoryEntry(h.date(), h.opponent(), h.result(), h.score(), h.opponentScore()))
+                    .toList();
+                Models.MatchHistoryResp resp = new Models.MatchHistoryResp(entries);
+                sendTo(from, Message.of(MessageType.MATCH_HISTORY_RESP, resp));
+                System.out.println("MATCH_HISTORY: " + req.username() + " requested history, found " + entries.size() + " matches");
+            } catch (Exception e) {
+        // Lỗi sẽ xuất hiện ở đây trong console của SERVER
+        System.err.println("!!!!!!!!!!!!!! LỖI KHI LẤY LỊCH SỬ ĐẤU !!!!!!!!!!!!!!");
+        e.printStackTrace(); // In ra chi tiết lỗi (ví dụ: Lỗi SQL)
+    }
+        }
             case GUESS_SUBMIT -> {
                 Models.GuessSubmit gs = Json.GSON.fromJson(Json.GSON.toJson(m.payload), Models.GuessSubmit.class);
                 GameRoom r = rooms.get(gs.roomId()); 
@@ -227,10 +250,10 @@ public class LobbyManager {
 
     public Models.LobbySnapshot snapshot() {
         var players = online.keySet().stream()
-            .map(u -> new Models.PlayerBrief(u, Persistence.totalPoints(u), "online"))
+            .map(u -> new Models.PlayerBrief(u, Persistence.totalPoints(u), "online", Persistence.totalWins(u)))
             .toList();
         var leaders = Persistence.topPlayers(10).stream()
-            .map(p -> new Models.PlayerBrief(p.name(), p.points(), "top"))
+            .map(p -> new Models.PlayerBrief(p.name(), p.points(), "top", p.wins()))
             .toList();
         var roomBriefs = rooms.values().stream()
             .map(GameRoom::brief)

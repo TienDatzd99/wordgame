@@ -1,5 +1,5 @@
 package com.dat.wordgame.common;
-import java.util.*;
+import java.util.List;
 
 
 public class Models {
@@ -11,7 +11,7 @@ public record RegisterOk(String username) {}
 
 
 // Lobby
-public record PlayerBrief(String name, int points, String status) {}
+public record PlayerBrief(String name, int points, String status, int wins) {}
 public record LobbySnapshot(List<PlayerBrief> online, List<PlayerBrief> leaderboard, List<RoomBrief> rooms) {}
 public record RoomBrief(String roomId, String host, String opponent, String state) {}
 
@@ -61,6 +61,10 @@ public record Surrender(String roomId, String player) {}
 // Chat
 public record Chat(String roomId, String from, String text) {}
 
+// Match History
+public record MatchHistoryReq(String username, int limit) {}
+public record MatchHistoryResp(List<MatchHistoryEntry> matches) {}
+public record MatchHistoryEntry(String date, String opponent, String result, int score, int opponentScore) {}
 
 // Error
 public record Err(String code, String message) {}

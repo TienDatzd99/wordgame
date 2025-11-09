@@ -1,19 +1,13 @@
 package com.dat.wordgame.client;
 
-import javax.swing.SwingUtilities;
-import com.dat.wordgame.client.ui.SwingLoginView;
+import com.dat.wordgame.client.ui.FXLoginView;
+
+import javafx.application.Application;
 
 public class ClientMain {
     
     public static void main(String[] args) {
-        // Always run Swing GUI mode
-        SwingUtilities.invokeLater(() -> {
-            try {
-                new SwingLoginView().setVisible(true);
-            } catch (Exception e) {
-                System.err.println("Lỗi khởi động GUI: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
+        // Launch JavaFX application for modern cross-platform UI
+        Application.launch(FXLoginView.class, args);
     }
 }

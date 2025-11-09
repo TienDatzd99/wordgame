@@ -1,8 +1,9 @@
-/Users/tiendat/BTLLTM/wordgame/wordgame/client/src/main/java/com/dat/wordgame/client/ui/RoomView.java
-/Users/tiendat/BTLLTM/wordgame/wordgame/client/src/main/java/com/dat/wordgame/client/ClientState.java
-/Users/tiendat/BTLLTM/wordgame/wordgame/client/src/main/java/com/dat/wordgame/client/ui/LobbyView.java
-/Users/tiendat/BTLLTM/wordgame/wordgame/client/src/main/java/com/dat/wordgame/client/IncomingLoop.java
-/Users/tiendat/BTLLTM/wordgame/wordgame/client/src/main/java/com/dat/wordgame/client/NetClient.java
-/Users/tiendat/BTLLTM/wordgame/wordgame/client/src/main/java/com/dat/wordgame/client/ui/GameView.java
-/Users/tiendat/BTLLTM/wordgame/wordgame/client/src/main/java/com/dat/wordgame/client/ClientMain.java
-/Users/tiendat/BTLLTM/wordgame/wordgame/client/src/main/java/com/dat/wordgame/client/ui/SwingLoginView.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\ui\FXLoginView.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\ui\FXGameView.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\ClientState.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\ui\FXLobbyView.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\ClientMain.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\NetClient.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\IncomingLoop.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\ui\FXRoomView.java
+D:\wordgame\wordgame\client\src\main\java\com\dat\wordgame\client\ui\SoundPlayer.java

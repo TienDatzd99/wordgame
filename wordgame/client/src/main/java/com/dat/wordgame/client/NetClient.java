@@ -24,10 +24,35 @@ public class NetClient implements Closeable {
         out = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()), true);
     }
     
-    public void send(Message m) {
+   public boolean send(Message m) {
         System.out.println("[NetClient] Sending message: " + m.type + " | Connected: " + !sock.isClosed());
-        out.println(Json.encode(m));
-        out.flush(); // Ensure message is sent immediately
+        
+        // Kiểm tra xem socket còn mở không
+        if (sock.isClosed() || out.checkError()) {
+            System.err.println("[NetClient] Send failed: Socket is closed or in error state.");
+            return false;
+        }
+
+        try {
+            out.println(Json.encode(m));
+            // Không cần gọi out.flush() nếu bạn đã đặt autoFlush=true
+            // Nhưng gọi nó cũng không sao, đảm bảo dữ liệu được gửi đi.
+            out.flush(); 
+            
+            // Kiểm tra lỗi sau khi flush
+            if (out.checkError()) {
+                 System.err.println("[NetClient] Send failed: PrintWriter encountered an error.");
+                 return false;
+            }
+            
+            return true; // Gửi thành công
+
+        } catch (Exception e) {
+            // Bắt bất kỳ lỗi nào xảy ra trong quá trình gửi
+            System.err.println("[NetClient] Exception during send: " + e.getMessage());
+            e.printStackTrace();
+            return false; // Gửi thất bại
+        }
     }
     
     public void listen(Consumer<Message> on) {
