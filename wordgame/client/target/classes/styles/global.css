@@ -1,0 +1,81 @@
+/* Global font for the entire application */
+.root {
+    -fx-font-family: "Inter", "SF Pro Display", "Roboto", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+}
+
+/* Game view keeps original style - no font changes */
+.game-view-root {
+    -fx-font-family: "Arial", "Segoe UI", sans-serif;
+    -fx-font-size: inherit !important;
+}
+
+.game-view-root .label,
+.game-view-root .button,
+.game-view-root .text-field {
+    -fx-font-family: "Arial", "Segoe UI", sans-serif;
+    -fx-font-size: inherit !important;
+}
+
+/* Glass Morphism Effect - Modern frosted glass look */
+.glass-panel {
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-background-radius: 20px;
+    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-border-width: 1px;
+    -fx-border-radius: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 20, 0, 0, 5);
+}
+
+.glass-card {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-background-radius: 15px;
+    -fx-border-color: rgba(255, 255, 255, 0.4);
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 15px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 15, 0, 0, 3);
+}
+
+.glass-dialog {
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+    -fx-background-radius: 12px;
+    -fx-border-color: rgba(255, 255, 255, 0.35);
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 18, 0, 0, 4);
+}
+
+/* Title fonts */
+.title {
+    -fx-font-family: "Inter", "SF Pro Display", "Roboto", sans-serif;
+    -fx-font-weight: bold;
+}
+
+/* Button fonts */
+.button {
+    -fx-font-family: "Inter", "SF Pro Display", "Roboto", sans-serif;
+}
+
+/* Label fonts */
+.label {
+    -fx-font-family: "Inter", "SF Pro Display", "Roboto", sans-serif;
+}
+
+/* TextField fonts */
+.text-field {
+    -fx-font-family: "Inter", "SF Pro Display", "Roboto", sans-serif;
+}
+
+/* TableView fonts */
+.table-view {
+    -fx-font-family: "Inter", "SF Pro Display", "Roboto", sans-serif;
+}
+
+.table-view .column-header-background .label {
+    -fx-font-family: "Inter", "SF Pro Display", "Roboto", sans-serif;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-cell {
+    -fx-font-family: "Inter", "SF Pro Display", "Roboto", sans-serif;
+}

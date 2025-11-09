@@ -1,21 +1,29 @@
 package com.dat.wordgame.client.ui;
 
+import com.dat.wordgame.client.NetClient;
+import com.dat.wordgame.common.Json;
+import com.dat.wordgame.common.Message;
+import com.dat.wordgame.common.MessageType;
+import com.dat.wordgame.common.Models;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-import com.dat.wordgame.client.NetClient;
-import com.dat.wordgame.common.Message;
-import com.dat.wordgame.common.MessageType;
-import com.dat.wordgame.common.Models;
-import com.dat.wordgame.common.Json;
 
 public class FXLoginView extends Application {
     
@@ -43,6 +51,7 @@ public class FXLoginView extends Application {
         root.getChildren().add(card);
         
         Scene scene = new Scene(root, 900, 700);
+        scene.getStylesheets().add(getClass().getResource("/styles/global.css").toExternalForm());
         stage.setTitle("WordleCup Multiplayer - v2.5.1");
         stage.setScene(scene);
         stage.setOnCloseRequest(e -> {
@@ -64,16 +73,16 @@ public class FXLoginView extends Application {
         card.setMaxHeight(650);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(40));
-        card.setStyle("-fx-background-color: rgba(255, 255, 255, 0.95); -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 20, 0, 0, 5);");
+        card.getStyleClass().add("glass-panel");
         
         // Title
         Label title = new Label("🎮 WORD GAME");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 36));
-        title.setStyle("-fx-text-fill: #5856d6;");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 50));
+        title.setStyle("-fx-text-fill: #cfef2fff; -fx-effect: dropshadow(gaussian, rgba(88, 86, 214, 0.8), 10, 0, 0, 0);");
         
         Label subtitle = new Label("Multiplayer Edition");
         subtitle.setFont(Font.font("Arial", FontWeight.NORMAL, 18));
-        subtitle.setStyle("-fx-text-fill: #8a2be2;");
+        subtitle.setStyle("-fx-text-fill: #ffffff; -fx-opacity: 0.9;");
         
         // Connection Panel
         VBox connectionPanel = createConnectionPanel();
@@ -84,12 +93,12 @@ public class FXLoginView extends Application {
         // Status Label
         statusLabel = new Label("Chưa kết nối server");
         statusLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
-        statusLabel.setStyle("-fx-text-fill: #dc3545;");
+        statusLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 3, 0, 0, 0);");
         
         // Version
         Label version = new Label("v2.5.1 - Build 08/11/2025");
         version.setFont(Font.font("Arial", FontWeight.NORMAL, 11));
-        version.setStyle("-fx-text-fill: #999999;");
+        version.setStyle("-fx-text-fill: #ffffff; -fx-opacity: 0.6;");
         
         card.getChildren().addAll(title, subtitle, connectionPanel, loginPanel, statusLabel, version);
         return card;
@@ -98,11 +107,12 @@ public class FXLoginView extends Application {
     private VBox createConnectionPanel() {
         VBox panel = new VBox(15);
         panel.setAlignment(Pos.CENTER);
-        panel.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 15; -fx-padding: 20;");
+        panel.getStyleClass().add("glass-card");
+        panel.setStyle("-fx-padding: 20;");
         
         Label panelTitle = new Label("🌐 Kết nối Server");
         panelTitle.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        panelTitle.setStyle("-fx-text-fill: #5856d6;");
+        panelTitle.setStyle("-fx-text-fill: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 5, 0, 0, 0);");
         
         HBox hostPortBox = new HBox(15);
         hostPortBox.setAlignment(Pos.CENTER);
@@ -111,6 +121,7 @@ public class FXLoginView extends Application {
         VBox hostBox = new VBox(8);
         Label hostLabel = new Label("Host:");
         hostLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        hostLabel.setStyle("-fx-text-fill: #ffffff; -fx-opacity: 0.9;");
         hostField = new TextField("127.0.0.1");
         hostField.setPrefWidth(200);
         styleTextField(hostField);
@@ -120,6 +131,7 @@ public class FXLoginView extends Application {
         VBox portBox = new VBox(8);
         Label portLabel = new Label("Port:");
         portLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        portLabel.setStyle("-fx-text-fill: #ffffff; -fx-opacity: 0.9;");
         portField = new TextField("7777");
         portField.setPrefWidth(100);
         styleTextField(portField);
@@ -138,16 +150,18 @@ public class FXLoginView extends Application {
     private VBox createLoginPanel() {
         VBox panel = new VBox(15);
         panel.setAlignment(Pos.CENTER);
-        panel.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 15; -fx-padding: 20;");
+        panel.getStyleClass().add("glass-card");
+        panel.setStyle("-fx-padding: 20;");
         
         Label panelTitle = new Label("👤 Đăng Nhập");
         panelTitle.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        panelTitle.setStyle("-fx-text-fill: #5856d6;");
+        panelTitle.setStyle("-fx-text-fill: #ffffff; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 5, 0, 0, 0);");
         
         // Username
         VBox userBox = new VBox(8);
         Label userLabel = new Label("Tên đăng nhập:");
         userLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        userLabel.setStyle("-fx-text-fill: #ffffff; -fx-opacity: 0.9;");
         usernameField = new TextField();
         usernameField.setPromptText("Nhập tên người chơi...");
         usernameField.setPrefWidth(400);
@@ -159,6 +173,7 @@ public class FXLoginView extends Application {
         VBox passBox = new VBox(8);
         Label passLabel = new Label("Mật khẩu:");
         passLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        passLabel.setStyle("-fx-text-fill: #ffffff; -fx-opacity: 0.9;");
         passwordField = new PasswordField();
         passwordField.setPromptText("Nhập mật khẩu...");
         passwordField.setPrefWidth(400);

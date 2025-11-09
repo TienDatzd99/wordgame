@@ -12,6 +12,7 @@ import com.dat.wordgame.common.Message;
 import com.dat.wordgame.common.MessageType;
 import com.dat.wordgame.common.Models;
 
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -20,6 +21,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.util.Duration;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -107,6 +109,7 @@ public class FXLobbyView {
         rootPane.getChildren().add(mainContent);
 
         Scene scene = new Scene(rootPane, 1200, 800);
+        scene.getStylesheets().add(getClass().getResource("/styles/global.css").toExternalForm());
         stage.setTitle("WordGame - Lobby");
         stage.setScene(scene);
         stage.setOnCloseRequest(e -> {
@@ -125,11 +128,11 @@ public class FXLobbyView {
 
         welcomeLabel = new Label("Chào mừng, " + currentUser + "!");
         welcomeLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 32));
-        welcomeLabel.setStyle("-fx-text-fill: white;");
+        welcomeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 36px !important; -fx-font-weight: bold;");
 
         Label subtitle = new Label("Chọn chế độ chơi hoặc xem bảng xếp hạng");
         subtitle.setFont(Font.font("Segoe UI", 16));
-        subtitle.setStyle("-fx-text-fill: rgba(255,255,255,0.8);");
+        subtitle.setStyle("-fx-text-fill: rgba(255,255,255,0.8); -fx-font-size: 18px !important;");
 
         header.getChildren().addAll(welcomeLabel, subtitle);
         return header;
@@ -164,7 +167,7 @@ public class FXLobbyView {
 
         Label title = new Label("🎮 Người chơi đang online");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        title.setStyle("-fx-text-fill: white;");
+        title.setStyle("-fx-text-fill: white; -fx-font-size: 24px !important; -fx-font-weight: bold;");
 
         // Create players table
         playersTable = new TableView<>();
@@ -174,14 +177,17 @@ public class FXLobbyView {
         TableColumn<PlayerRow, String> nameCol = new TableColumn<>("Tên người chơi");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         nameCol.setPrefWidth(180);
+        centerAlignColumn(nameCol);
 
         TableColumn<PlayerRow, String> statusCol = new TableColumn<>("Trạng thái");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setPrefWidth(150);
+        centerAlignColumn(statusCol);
 
         TableColumn<PlayerRow, Integer> pointsCol = new TableColumn<>("Điểm số");
         pointsCol.setCellValueFactory(new PropertyValueFactory<>("points"));
         pointsCol.setPrefWidth(100);
+        centerAlignColumn(pointsCol);
 
         playersTable.getColumns().addAll(nameCol, statusCol, pointsCol);
         styleTable(playersTable);
@@ -217,7 +223,7 @@ public class FXLobbyView {
 
         Label title = new Label("🏆 Bảng xếp hạng");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        title.setStyle("-fx-text-fill: white;");
+        title.setStyle("-fx-text-fill: white; -fx-font-size: 24px !important; -fx-font-weight: bold;");
 
         // Create ranking table
         rankingTable = new TableView<>();
@@ -227,18 +233,22 @@ public class FXLobbyView {
         TableColumn<RankingRow, Integer> rankCol = new TableColumn<>("Hạng");
         rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
         rankCol.setPrefWidth(70);
+        centerAlignColumn(rankCol);
 
         TableColumn<RankingRow, String> nameCol = new TableColumn<>("Tên người chơi");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         nameCol.setPrefWidth(180);
+        centerAlignColumn(nameCol);
 
         TableColumn<RankingRow, Integer> totalPointsCol = new TableColumn<>("Tổng điểm");
         totalPointsCol.setCellValueFactory(new PropertyValueFactory<>("totalPoints"));
         totalPointsCol.setPrefWidth(120);
+        centerAlignColumn(totalPointsCol);
 
         TableColumn<RankingRow, String> winsCol = new TableColumn<>("Số trận thắng");
         winsCol.setCellValueFactory(new PropertyValueFactory<>("wins"));
         winsCol.setPrefWidth(130);
+        centerAlignColumn(winsCol);
 
         rankingTable.getColumns().addAll(rankCol, nameCol, totalPointsCol, winsCol);
         styleTable(rankingTable);
@@ -321,6 +331,28 @@ public class FXLobbyView {
         // các đoạn mã gốc không có, nên giữ đơn giản.
     }
 
+    /**
+     * Helper method để căn giữa nội dung cell trong TableColumn
+     */
+    private <S, T> void centerAlignColumn(TableColumn<S, T> column) {
+        column.setCellFactory(col -> {
+            TableCell<S, T> cell = new TableCell<S, T>() {
+                @Override
+                protected void updateItem(T item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item.toString());
+                        setAlignment(Pos.CENTER); // Căn giữa
+                    }
+                }
+            };
+            return cell;
+        });
+    }
+
     private ContextMenu createChallengeMenu(String playerName) {
         ContextMenu menu = new ContextMenu();
         MenuItem challengeItem = new MenuItem("⚔️ Gửi thách đấu đến " + playerName);
@@ -377,13 +409,15 @@ public class FXLobbyView {
                 "-fx-text-fill: white;" +
                 "-fx-padding: 12 25;" +
                 "-fx-background-radius: 8;" +
-                "-fx-cursor: hand;";
+                "-fx-cursor: hand;" +
+                "-fx-font-size: 16px !important; -fx-font-weight: bold;";
         
         String hoverStyle = "-fx-background-color: derive(" + color + ", -20%);" +
                 "-fx-text-fill: white;" +
                 "-fx-padding: 12 25;" +
                 "-fx-background-radius: 8;" +
-                "-fx-cursor: hand;";
+                "-fx-cursor: hand;" +
+                "-fx-font-size: 16px !important; -fx-font-weight: bold;";
 
         button.setStyle(baseStyle);
         button.setOnMouseEntered(e -> button.setStyle(hoverStyle));
@@ -438,18 +472,22 @@ public class FXLobbyView {
         TableColumn<MatchHistoryRow, String> dateCol = new TableColumn<>("Ngày");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
         dateCol.setPrefWidth(150);
+        centerAlignColumn(dateCol);
         
         TableColumn<MatchHistoryRow, String> opponentCol = new TableColumn<>("Đối thủ");
         opponentCol.setCellValueFactory(new PropertyValueFactory<>("opponent"));
         opponentCol.setPrefWidth(150);
+        centerAlignColumn(opponentCol);
         
         TableColumn<MatchHistoryRow, String> resultCol = new TableColumn<>("Kết quả");
         resultCol.setCellValueFactory(new PropertyValueFactory<>("result"));
         resultCol.setPrefWidth(120);
+        centerAlignColumn(resultCol);
         
         TableColumn<MatchHistoryRow, Integer> scoreCol = new TableColumn<>("Điểm");
         scoreCol.setCellValueFactory(new PropertyValueFactory<>("score"));
         scoreCol.setPrefWidth(80);
+        centerAlignColumn(scoreCol);
         
         historyTable.getColumns().addAll(dateCol, opponentCol, resultCol, scoreCol);
         historyTable.setItems(historyData);
@@ -481,6 +519,7 @@ public class FXLobbyView {
         mainLayout.getChildren().addAll(titleLabel, historyTable, noteLabel, closeBtn);
         
         Scene scene = new Scene(mainLayout, 600, 450);
+        scene.getStylesheets().add(getClass().getResource("/styles/global.css").toExternalForm());
         historyDialog.setScene(scene);
         historyDialog.show();
     }
@@ -529,14 +568,19 @@ public class FXLobbyView {
     public void handleMessage(Message message) {
         System.out.println("FXLobbyView: handleMessage called with type: " + message.type);
 
+        // Xử lý LOBBY_SNAPSHOT luôn, kể cả khi đang trong game để cập nhật dữ liệu
+        boolean isLobbyData = message.type == MessageType.LOBBY_SNAPSHOT || 
+                              message.type == MessageType.PLAYER_LIST || 
+                              message.type == MessageType.LEADERBOARD;
+        
         // Chuyển tiếp đến các view con JavaFX nếu chúng đang hoạt động
-        if (currentGameView != null) {
+        if (currentGameView != null && !isLobbyData) {
             switch (message.type) {
                 case ROUND_START, ROUND_TICK, ROUND_END, GAME_END, GUESS_UPDATE, CHAT:
                     currentGameView.onMessage(message);
                     return;
             }
-        } else if (currentRoomView != null) {
+        } else if (currentRoomView != null && !isLobbyData) {
             switch (message.type) {
                 case CHAT, ROOM_LEFT, FRIEND_LIST_RESP, ROOM_INVITE_RESP:
                     currentRoomView.handleMessage(message);
@@ -548,11 +592,16 @@ public class FXLobbyView {
         Platform.runLater(() -> {
             switch (message.type) {
                 case LOBBY_SNAPSHOT, PLAYER_LIST, LEADERBOARD -> {
+                    System.out.println("[FXLobbyView] ========== PROCESSING LOBBY_SNAPSHOT ==========");
+                    System.out.println("[FXLobbyView] currentGameView: " + (currentGameView != null ? "ACTIVE" : "NULL"));
+                    System.out.println("[FXLobbyView] currentRoomView: " + (currentRoomView != null ? "ACTIVE" : "NULL"));
+                    
                     // Server có thể trả về LobbySnapshot cho cả 3 message types
                     Models.LobbySnapshot snapshot = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.LobbySnapshot.class);
                     
                     // Cập nhật danh sách người chơi online
                     if (snapshot.online() != null && !snapshot.online().isEmpty()) {
+                        System.out.println("[FXLobbyView] >>> CLEARING and UPDATING players list...");
                         playersData.clear();
                         onlinePlayers.clear(); // Clear và rebuild danh sách online
                         for (Models.PlayerBrief player : snapshot.online()) {
@@ -560,21 +609,34 @@ public class FXLobbyView {
                             playersData.add(new PlayerRow(player.name(), status, player.points()));
                             onlinePlayers.add(player.name()); // Lưu lại người chơi online
                         }
-                        System.out.println("[FXLobbyView] Updated players list: " + playersData.size() + " players");
+                        System.out.println("[FXLobbyView] >>> Updated players list: " + playersData.size() + " players");
                     }
 
                     // Cập nhật bảng xếp hạng
                     if (snapshot.leaderboard() != null && !snapshot.leaderboard().isEmpty()) {
+                        System.out.println("[FXLobbyView] >>> CLEARING and UPDATING leaderboard...");
                         rankingData.clear();
                         int rank = 1;
                         for (Models.PlayerBrief player : snapshot.leaderboard()) {
                             rankingData.add(new RankingRow(rank++, player.name(), player.points(), String.valueOf(player.wins())));
+                            System.out.println("[FXLobbyView]     Rank " + (rank-1) + ": " + player.name() + " - " + player.points() + " pts, " + player.wins() + " wins");
                         }
-                        System.out.println("[FXLobbyView] Updated leaderboard: " + rankingData.size() + " players");
+                        System.out.println("[FXLobbyView] >>> Updated leaderboard: " + rankingData.size() + " players");
                         
-                        // Refresh table để cập nhật styling (online/offline)
-                        rankingTable.refresh();
+                        // Table tự động cập nhật vì đã bind với rankingData
+                        if (rankingTable != null) {
+                            rankingTable.refresh();
+                            System.out.println("[FXLobbyView] >>> Refreshed rankingTable! Items count: " + rankingTable.getItems().size());
+                        }
                     }
+                    
+                    // Cập nhật players table tương tự
+                    if (playersTable != null && snapshot.online() != null) {
+                        playersTable.refresh();
+                        System.out.println("[FXLobbyView] >>> Refreshed playersTable! Items count: " + playersTable.getItems().size());
+                    }
+                    
+                    System.out.println("[FXLobbyView] ========== DONE PROCESSING LOBBY_SNAPSHOT ==========");
                 }
                 case INVITE_RECEIVE -> {
                     Models.InviteReceive invite = Json.GSON.fromJson(Json.GSON.toJson(message.payload), Models.InviteReceive.class);
@@ -746,14 +808,17 @@ public class FXLobbyView {
         TableColumn<FriendRow, String> nameCol = new TableColumn<>("Tên");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         nameCol.setPrefWidth(150);
+        centerAlignColumn(nameCol);
 
         TableColumn<FriendRow, String> statusCol = new TableColumn<>("Trạng thái");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setPrefWidth(120);
+        centerAlignColumn(statusCol);
 
         TableColumn<FriendRow, Integer> pointsCol = new TableColumn<>("Điểm");
         pointsCol.setCellValueFactory(new PropertyValueFactory<>("points"));
         pointsCol.setPrefWidth(100);
+        centerAlignColumn(pointsCol);
 
         friendsTable.getColumns().addAll(nameCol, statusCol, pointsCol);
         friendsTable.setItems(friendsData);
@@ -809,6 +874,7 @@ public class FXLobbyView {
         root.getChildren().addAll(header, searchPanel, friendsTable, buttonBar);
 
         Scene scene = new Scene(root, 550, 500);
+        scene.getStylesheets().add(getClass().getResource("/styles/global.css").toExternalForm());
         dialogStage.setScene(scene);
         dialogStage.show();
     }
@@ -934,6 +1000,7 @@ public class FXLobbyView {
         root.getChildren().addAll(header, resultsTable, buttonBar);
 
         Scene scene = new Scene(root, 600, 400);
+        scene.getStylesheets().add(getClass().getResource("/styles/global.css").toExternalForm());
         dialogStage.setScene(scene);
         dialogStage.show();
     }
@@ -1008,26 +1075,43 @@ public class FXLobbyView {
      * Quay về lobby view từ game view
      */
     public void returnFromGame() {
+        // Xóa currentGameView TRƯỚC để handleMessage có thể xử lý LOBBY_SNAPSHOT
+        currentGameView = null;
+        currentRoomView = null;
+        
         Platform.runLater(() -> {
-            // Xóa currentGameView nếu có
-            currentGameView = null;
-            currentRoomView = null;
-            
             // Hiển thị lại lobby bằng cách set root về rootPane
             stage.getScene().setRoot(rootPane);
             
-            // Yêu cầu cập nhật DỮ LIỆU MỚI - bao gồm cả PLAYER_LIST và LEADERBOARD
-            try {
-                Message playerListMsg = Message.of(MessageType.PLAYER_LIST, currentUser);
-                netClient.send(playerListMsg);
-                
-                Message leaderboardMsg = Message.of(MessageType.LEADERBOARD, currentUser);
-                netClient.send(leaderboardMsg);
-                
-                System.out.println("[FXLobbyView] Refreshed lobby data after game ended");
-            } catch (Exception e) {
-                showError("Lỗi làm mới lobby: " + e.getMessage());
+            System.out.println("[FXLobbyView] ===== RETURNED FROM GAME =====");
+            System.out.println("[FXLobbyView] Current rankingData size: " + rankingData.size());
+            System.out.println("[FXLobbyView] Current playersData size: " + playersData.size());
+            
+            // FORCE REFRESH tables ngay lập tức - KHÔNG clear items vì nó đã bind với data
+            if (rankingTable != null) {
+                System.out.println("[FXLobbyView] Force refreshing ranking table...");
+                rankingTable.refresh();
+                rankingTable.sort();
+                System.out.println("[FXLobbyView] Ranking table items after refresh: " + rankingTable.getItems().size());
             }
+            
+            if (playersTable != null) {
+                System.out.println("[FXLobbyView] Force refreshing players table...");
+                playersTable.refresh();
+                System.out.println("[FXLobbyView] Players table items after refresh: " + playersTable.getItems().size());
+            }
+            
+            System.out.println("[FXLobbyView] ===== TABLES REFRESHED =====");
+            
+            // Delay nhỏ để đảm bảo server đã broadcast snapshot
+            PauseTransition delay = new PauseTransition(Duration.millis(500));
+            delay.setOnFinished(e -> {
+                // REQUEST dữ liệu mới từ server
+                System.out.println("[FXLobbyView] Requesting fresh data from server...");
+                requestPlayersList();
+                requestRankingData();
+            });
+            delay.play();
         });
     }
     

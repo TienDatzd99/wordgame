@@ -36,6 +36,7 @@ private String firstCorrect = null; // Who answered correctly first
 private long firstCorrectTime = 0; // Time when first correct answer
 private Map<String, Long> completionTimes = new HashMap<>(); // Track each player's completion time
 private Map<String, Integer> gameScores = new HashMap<>(); // Track total game scores for each player
+private boolean gameEnded = false; // Flag to prevent saving match result twice
 
 
 public GameRoom(String host, String opponent, LobbyManager lobby){ this.host=host; this.opponent=opponent; this.lobby=lobby; }
@@ -173,12 +174,21 @@ if (isCorrect && !playersCorrect.contains(from)) {
                 finalWinner = "Hòa";
             }
             
+            // Thêm 50 điểm cho người thắng game
+            if (!finalWinner.equals("Hòa")) {
+                int gameWinBonus = 50;
+                Persistence.addPoints(finalWinner, gameWinBonus);
+                System.out.println("[GameRoom] Game winner " + finalWinner + " receives bonus: +" + gameWinBonus + " points");
+            }
+            
             System.out.println("[GameRoom] Final game result: " + host + "(" + hostScore + ") vs " + opponent + "(" + opponentScore + ") -> Winner: " + finalWinner);
             
             // Lưu lịch sử đấu vào database (cả khi hòa)
             System.out.println("[GameRoom] Saving match result to database...");
             Persistence.saveMatchResult(host, opponent, finalWinner, hostScore, opponentScore, 0, 0);
             System.out.println("[GameRoom] Match result saved successfully!");
+            
+            gameEnded = true; // Mark game as ended to prevent duplicate saves
             
             var s1 = new Summary(host, 0, 0, 0, 0);
             var s2 = new Summary(opponent, 0, 0, 0, 0);
@@ -219,6 +229,12 @@ if (isCorrect && !playersCorrect.contains(from)) {
     }
 public void onSurrender(String player) {
     System.out.println("[GameRoom] Player " + player + " surrendered");
+    
+    // Prevent processing surrender if game already ended
+    if (gameEnded) {
+        System.out.println("[GameRoom] Game already ended, ignoring surrender");
+        return;
+    }
     
     // Determine opponent who wins by default
     String winner = player.equals(host) ? opponent : host;
@@ -270,6 +286,8 @@ public void onSurrender(String player) {
     String winnerToSave = (finalWinner != null) ? finalWinner : "Hòa";
     Persistence.saveMatchResult(host, opponent, winnerToSave, hostScore, opponentScore, 0, 0);
     System.out.println("[GameRoom] Surrender match result saved successfully!");
+    
+    gameEnded = true; // Mark game as ended to prevent duplicate saves
     
     var s1 = new Summary(host, 0, 0, 0, 0);
     var s2 = new Summary(opponent, 0, 0, 0, 0);

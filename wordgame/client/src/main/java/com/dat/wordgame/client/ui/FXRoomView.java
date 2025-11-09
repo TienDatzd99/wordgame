@@ -463,7 +463,7 @@ public class FXRoomView {
         HBox contentBox = new HBox(20);
         contentBox.setAlignment(Pos.CENTER);
 
-        // TableView với cột hành động
+        // TableView (bên trái)
         TableView<FriendInfoRow> table = new TableView<>();
         ObservableList<FriendInfoRow> tableData = FXCollections.observableArrayList();
         for (Models.FriendInfo friend : onlineFriends) {
@@ -473,77 +473,37 @@ public class FXRoomView {
 
         TableColumn<FriendInfoRow, String> nameCol = new TableColumn<>("Tên bạn");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-        nameCol.setPrefWidth(180);
+        nameCol.setPrefWidth(200);
+        centerAlignColumn(nameCol); // Căn giữa
 
         TableColumn<FriendInfoRow, Integer> pointsCol = new TableColumn<>("Điểm");
         pointsCol.setCellValueFactory(new PropertyValueFactory<>("points"));
-        pointsCol.setPrefWidth(80);
+        pointsCol.setPrefWidth(100);
+        centerAlignColumn(pointsCol); // Căn giữa
 
-        // Cột "Hành động" với nút Mời cho mỗi dòng
-        TableColumn<FriendInfoRow, Void> actionCol = new TableColumn<>("Hành động");
-        actionCol.setPrefWidth(120);
-        actionCol.setCellFactory(col -> new TableCell<FriendInfoRow, Void>() {
-            private final Button inviteBtn = new Button("📧 Mời");
-            {
-                inviteBtn.setStyle(
-                    "-fx-background-color: #22C55E;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-font-size: 12px;" +
-                    "-fx-font-weight: bold;" +
-                    "-fx-padding: 8 15;" +
-                    "-fx-background-radius: 6;" +
-                    "-fx-cursor: hand;"
-                );
-                
-                inviteBtn.setOnMouseEntered(e -> inviteBtn.setStyle(
-                    "-fx-background-color: #16A34A;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-font-size: 12px;" +
-                    "-fx-font-weight: bold;" +
-                    "-fx-padding: 8 15;" +
-                    "-fx-background-radius: 6;" +
-                    "-fx-cursor: hand;"
-                ));
-                
-                inviteBtn.setOnMouseExited(e -> inviteBtn.setStyle(
-                    "-fx-background-color: #22C55E;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-font-size: 12px;" +
-                    "-fx-font-weight: bold;" +
-                    "-fx-padding: 8 15;" +
-                    "-fx-background-radius: 6;" +
-                    "-fx-cursor: hand;"
-                ));
-
-                inviteBtn.setOnAction(e -> {
-                    FriendInfoRow friend = getTableView().getItems().get(getIndex());
-                    sendFriendInvite(friend.getName());
-                    dialogStage.close();
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    setGraphic(inviteBtn);
-                }
-            }
-        });
-
-        table.getColumns().addAll(nameCol, pointsCol, actionCol);
+        table.getColumns().addAll(nameCol, pointsCol);
         styleGlassTable(table);
-        table.setPrefHeight(300);
-        table.setMinWidth(400);
+        table.setPrefHeight(250);
+        table.setMinWidth(320);
 
-        // VBox chứa nút đóng (bên phải)
+        // VBox chứa nút mời (bên phải)
         VBox buttonPanel = new VBox(15);
         buttonPanel.setAlignment(Pos.CENTER);
         buttonPanel.setPadding(new Insets(10));
+
+        Button inviteBtn = new Button("📧 Gửi lời mời");
+        inviteBtn.setStyle(
+            "-fx-background-color: #4CAF50;" +
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 14px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-padding: 15 25;" +
+            "-fx-background-radius: 8;" +
+            "-fx-cursor: hand;"
+        );
+        inviteBtn.setMinWidth(150);
         
-        Button cancelBtn = new Button("Đóng");
+        Button cancelBtn = new Button("Hủy");
         cancelBtn.setStyle(
             "-fx-background-color: #e74c3c;" +
             "-fx-text-fill: white;" +
@@ -553,36 +513,34 @@ public class FXRoomView {
             "-fx-background-radius: 8;" +
             "-fx-cursor: hand;"
         );
-        cancelBtn.setMinWidth(120);
+        cancelBtn.setMinWidth(150);
 
-        // Hover effect
-        cancelBtn.setOnMouseEntered(e -> cancelBtn.setStyle(
-            "-fx-background-color: #c0392b;" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 14px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-padding: 15 25;" +
-            "-fx-background-radius: 8;" +
-            "-fx-cursor: hand;"
-        ));
-        cancelBtn.setOnMouseExited(e -> cancelBtn.setStyle(
-            "-fx-background-color: #e74c3c;" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 14px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-padding: 15 25;" +
-            "-fx-background-radius: 8;" +
-            "-fx-cursor: hand;"
-        ));
+        // Hover effects
+        inviteBtn.setOnMouseEntered(e -> inviteBtn.setStyle(inviteBtn.getStyle() + "-fx-background-color: #45a049;"));
+        inviteBtn.setOnMouseExited(e -> inviteBtn.setStyle(inviteBtn.getStyle().replace("-fx-background-color: #45a049;", "-fx-background-color: #4CAF50;")));
+        cancelBtn.setOnMouseEntered(e -> cancelBtn.setStyle(cancelBtn.getStyle() + "-fx-background-color: #c0392b;"));
+        cancelBtn.setOnMouseExited(e -> cancelBtn.setStyle(cancelBtn.getStyle().replace("-fx-background-color: #c0392b;", "-fx-background-color: #e74c3c;")));
+
+        // Actions
+        inviteBtn.setOnAction(e -> {
+            FriendInfoRow selected = table.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                sendFriendInvite(selected.getName());
+                dialogStage.close();
+            } else {
+                showError("Vui lòng chọn một bạn bè để mời!");
+            }
+        });
         
         cancelBtn.setOnAction(e -> dialogStage.close());
 
-        buttonPanel.getChildren().add(cancelBtn);
+        buttonPanel.getChildren().addAll(inviteBtn, cancelBtn);
 
         contentBox.getChildren().addAll(table, buttonPanel);
         root.getChildren().addAll(headerLabel, contentBox);
 
-        Scene scene = new Scene(root, 600, 400);
+        Scene scene = new Scene(root, 550, 350);
+        scene.getStylesheets().add(getClass().getResource("/styles/global.css").toExternalForm());
         dialogStage.setScene(scene);
         dialogStage.show();
     }
@@ -637,6 +595,23 @@ public class FXRoomView {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    // Phương thức trợ giúp căn giữa cột
+    private <T> void centerAlignColumn(TableColumn<FriendInfoRow, T> column) {
+        column.setCellFactory(col -> new TableCell<FriendInfoRow, T>() {
+            @Override
+            protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(item.toString());
+                    setAlignment(Pos.CENTER);
+                }
+            }
+        });
     }
 
     // Phương thức trợ giúp hiển thị Thông báo

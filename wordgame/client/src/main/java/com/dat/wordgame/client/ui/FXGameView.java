@@ -90,11 +90,11 @@ public class FXGameView {
     private BorderPane rootPane;
 
     // Định nghĩa kiểu cho các ô trả lời
-    private final String SLOT_STYLE_EMPTY = "-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: rgba(255, 255, 255, 0.2); -fx-border-color: rgba(255, 255, 255, 0.7); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5;";
-    private final String SLOT_STYLE_FILLED = "-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: rgba(255, 215, 0, 0.8); -fx-border-color: rgba(255, 255, 255, 0.7); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5;";
-    private final String SLOT_STYLE_FILLED_HOVER = "-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: rgba(255, 100, 100, 0.8); -fx-border-color: rgba(255, 255, 255, 0.7); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5;";
-    private final String SLOT_STYLE_CORRECT = "-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: rgba(46, 204, 113, 0.9); -fx-border-color: rgba(46, 204, 113, 1); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5;";
-    private final String SLOT_STYLE_INCORRECT = "-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: rgba(231, 76, 60, 0.8); -fx-border-color: rgba(231, 76, 60, 1); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5;";
+    private final String SLOT_STYLE_EMPTY = "-fx-font-size: 22px !important; -fx-font-weight: bold; -fx-font-family: 'Arial'; -fx-text-fill: white; -fx-background-color: rgba(255, 255, 255, 0.2); -fx-border-color: rgba(255, 255, 255, 0.7); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5; -fx-wrap-text: false; -fx-text-overrun: clip; -fx-alignment: center; -fx-content-display: center;";
+    private final String SLOT_STYLE_FILLED = "-fx-font-size: 22px !important; -fx-font-weight: bold; -fx-font-family: 'Arial'; -fx-text-fill: white; -fx-background-color: rgba(255, 215, 0, 0.8); -fx-border-color: rgba(255, 255, 255, 0.7); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5; -fx-wrap-text: false; -fx-text-overrun: clip; -fx-alignment: center; -fx-content-display: center;";
+    private final String SLOT_STYLE_FILLED_HOVER = "-fx-font-size: 22px !important; -fx-font-weight: bold; -fx-font-family: 'Arial'; -fx-text-fill: white; -fx-background-color: rgba(255, 100, 100, 0.8); -fx-border-color: rgba(255, 255, 255, 0.7); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5; -fx-wrap-text: false; -fx-text-overrun: clip; -fx-alignment: center; -fx-content-display: center;";
+    private final String SLOT_STYLE_CORRECT = "-fx-font-size: 22px !important; -fx-font-weight: bold; -fx-font-family: 'Arial'; -fx-text-fill: white; -fx-background-color: rgba(46, 204, 113, 0.9); -fx-border-color: rgba(46, 204, 113, 1); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5; -fx-wrap-text: false; -fx-text-overrun: clip; -fx-alignment: center; -fx-content-display: center;";
+    private final String SLOT_STYLE_INCORRECT = "-fx-font-size: 22px !important; -fx-font-weight: bold; -fx-font-family: 'Arial'; -fx-text-fill: white; -fx-background-color: rgba(231, 76, 60, 0.8); -fx-border-color: rgba(231, 76, 60, 1); -fx-border-width: 3; -fx-background-radius: 5; -fx-border-radius: 5; -fx-wrap-text: false; -fx-text-overrun: clip; -fx-alignment: center; -fx-content-display: center;";
 
 
     public FXGameView(NetClient netClient, String username, List<String> players, String gameId, FXLobbyView parentLobby) {
@@ -113,6 +113,7 @@ public class FXGameView {
         }
 
         this.rootPane = new BorderPane();
+        this.rootPane.getStyleClass().add("game-view-root");
         initializeUI();
         setupEventHandlers();
         setupGameTimer();
@@ -253,6 +254,7 @@ public class FXGameView {
         // Countdown label
         countdownLabel = new Label("Bắt đầu sau: 5s");
         countdownLabel.setFont(Font.font("Arial", FontWeight.BOLD, 72));
+        countdownLabel.setStyle("-fx-font-size: 72px !important; -fx-font-weight: bold; -fx-font-family: 'Arial';");
         countdownLabel.setTextFill(Color.GOLD);
         countdownLabel.setAlignment(Pos.CENTER);
 
@@ -264,6 +266,7 @@ public class FXGameView {
         gameAreaPanel.setBackground(Background.EMPTY);
         gameAreaPanel.getChildren().addAll(lettersPanel, countdownLabel);
         StackPane.setAlignment(countdownLabel, Pos.CENTER);
+        StackPane.setAlignment(lettersPanel, Pos.CENTER);
         
         centerArea.getChildren().addAll(answerSlotsPanel, gameAreaPanel);
 
@@ -281,7 +284,8 @@ public class FXGameView {
         panel.setPadding(new Insets(0, 0, 20, 0));
 
         wordLabel = new Label(maskedWord);
-        wordLabel.setFont(Font.font("Arial", FontWeight.BOLD, 48));
+        wordLabel.setFont(Font.font("Arial", FontWeight.BOLD, 56));
+        wordLabel.setStyle("-fx-font-size: 56px !important; -fx-font-weight: bold; -fx-font-family: 'Arial';");
         wordLabel.setTextFill(Color.WHITE);
         wordLabel.setAlignment(Pos.CENTER);
 
@@ -334,10 +338,11 @@ public class FXGameView {
 
     private Button createEmptySlot(int index) {
         Button btn = new Button("");
-        btn.setPrefSize(80, 80);
-        btn.setMinSize(80, 80);
-        btn.setMaxSize(80, 80);
+        btn.setPrefSize(60, 60);
+        btn.setMinSize(60, 60);
+        btn.setMaxSize(60, 60);
         btn.setCursor(Cursor.HAND);
+        btn.setWrapText(false); // Không wrap text xuống dòng 2
         btn.setStyle(SLOT_STYLE_EMPTY);
 
         // Click to remove letter
@@ -542,7 +547,8 @@ public class FXGameView {
         panel.setBackground(Background.EMPTY);
 
         statusLabel = new Label("Đang chờ bắt đầu game...");
-        statusLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
+        statusLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
+        statusLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI';");
         statusLabel.setTextFill(Color.WHITE);
         statusLabel.setMaxWidth(Double.MAX_VALUE);
         statusLabel.setAlignment(Pos.CENTER);

@@ -16,13 +16,13 @@ public static int timeLimitByLength(int len){
 public static int baseScore(boolean win){ return win?3:0; } // Legacy method for compatibility
 
 public static int baseScoreByRound(int round) {
-    // New scoring system based on difficulty (round)
+    // New scoring system: Round-based progression
     switch(round) {
-        case 1: return 50;   // Easy
-        case 2: return 100;  // Medium  
-        case 3: return 150;  // Hard
-        case 4: return 200;  // Insane
-        default: return 50;  // Default to easy
+        case 1: return 10;   // Round 1: 10 điểm
+        case 2: return 20;   // Round 2: 20 điểm  
+        case 3: return 30;   // Round 3: 30 điểm
+        case 4: return 40;   // Round 4: 40 điểm
+        default: return 10;  // Default to round 1
     }
 }
 
@@ -41,7 +41,7 @@ public static int calculateScore(boolean win, int completionTimeMs, int totalTim
     // Formula: (Time left / Total time) × Base score
     int timeLeftMs = totalTimeMs - completionTimeMs;
     double timeRatio = Math.max(0, timeLeftMs) / (double)totalTimeMs;
-    int bonus = (int)Math.round(timeRatio * baseScore);
+    int bonus = (int)Math.ceil(timeRatio * baseScore); // Làm tròn LÊN
     
     return baseScore + bonus;
 }
