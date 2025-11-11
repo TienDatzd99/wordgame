@@ -124,15 +124,12 @@ public class FXGameView {
         System.out.println("FXGameView created, waiting for ROUND_START...");
     }
     
-    /**
-     * Trả về node gốc của view này để hiển thị trong Scene.
-     */
     public Parent getView() {
         return rootPane;
     }
 
     public void onMessage(Message message) {
-        // Luôn cập nhật UI trên luồng JavaFX
+        
         Platform.runLater(() -> handleMessage(message));
     }
 
@@ -641,8 +638,7 @@ public class FXGameView {
             this.availableLetters = roundStart.shuffledLetters();
             this.timeRemaining = roundStart.totalTimeSec();
 
-            // Cập nhật tiêu đề (nếu GameView quản lý Stage)
-            // ((Stage) rootPane.getScene().getWindow()).setTitle("WordleCup - Vòng " + round);
+         
             
             wordLabel.setText(maskedWord.toUpperCase());
             createAnswerSlots(maskedWord.length());
